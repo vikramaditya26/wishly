@@ -1,27 +1,52 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Wishly design tokens — editorial, warm, quiet.
+   Fonts: Playfair Display (display) + DM Sans (body), wired via next/font.
+   NOTE: the font CSS variables are set on <body> by next/font, so reference
+   them directly here — do NOT chain them through @theme at :root.
+--------------------------------------------------------------------------- */
+
+:root {
+  --bg: #faf7f1;      /* warm paper */
+  --surface: #ffffff;
+  --tile: #f4efe6;    /* product image tile */
+  --ink: #1c1a17;
+  --muted: #96907f;
+  --line: #e9e2d4;
+  --accent: #9d4433;  /* terracotta */
+}
+
 body {
-  font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-dm), ui-sans-serif, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
 
 .font-display {
-  font-family: var(--font-baloo), "Comic Sans MS", cursive;
+  font-family: var(--font-playfair), Georgia, serif;
 }
 
-/* gentle float for decorative emojis */
-@keyframes floaty {
-  0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50% { transform: translateY(-10px) rotate(3deg); }
+/* shared input style */
+.input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 15px;
+  outline: none;
 }
-.animate-floaty {
-  animation: floaty 4s ease-in-out infinite;
+.input:focus {
+  border-color: var(--ink);
 }
 
-/* pop-in for cards */
-@keyframes popin {
-  from { opacity: 0; transform: scale(0.95) translateY(8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+/* quiet fade-up for content blocks */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.animate-popin {
-  animation: popin 0.25s ease-out both;
+.animate-rise {
+  animation: rise 0.35s ease-out both;
 }

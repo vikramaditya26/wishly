@@ -5,30 +5,26 @@ export type Occasion =
   | "wedding"
   | "anniversary"
   | "housewarming"
-  | "baby"
   | "justbecause";
 
-export type ForWho = "her" | "him" | "kids" | "couple" | "anyone";
-
-export type Vibe = "student" | "working" | "any";
+export type ForWho = "her" | "him" | "anyone";
 
 export interface CatalogProduct {
   id: string;
   name: string;
-  emoji: string;
-  price: string; // display-only range, e.g. "₹299 – ₹799"
+  image: string; // product photo URL
+  price: number; // INR, display-only
   category: string; // category id from CATEGORIES
   amazonQuery: string; // used to build an affiliate-tagged amazon.in search link
   occasions: Occasion[];
-  forWho: ForWho[];
-  vibe: Vibe;
+  forWho: ForWho;
 }
 
 export interface BasketItem {
   id: string;
   name: string;
-  emoji?: string;
-  imageUrl?: string; // only for custom (user-added) products
+  emoji?: string; // legacy field, unused in UI
+  imageUrl?: string;
   price?: string;
   url?: string; // buy link; affiliate tag is added automatically for amazon links
   claimedBy?: string | null;

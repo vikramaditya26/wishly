@@ -1,189 +1,173 @@
 // ---------------------------------------------------------------------------
-// The curated gift catalog: 8 categories x 10 products.
-// Products link to affiliate-tagged amazon.in search results (safer than
-// hard-coding ASINs which go out of stock). To add/edit products just edit
-// this file - no database involved.
+// The curated gift catalog: 8 categories x 10 products, with real product
+// photos (cdn.dummyjson.com - free, stable product-image CDN; replace with own
+// images later if desired). Prices are indicative INR. "Buy" goes to an
+// affiliate-tagged amazon.in search for the product name, so listings never
+// go stale. To edit the catalog, edit this file - no database involved.
 // ---------------------------------------------------------------------------
 
-import type { CatalogProduct, ForWho, Occasion, Vibe } from "./types";
+import type { CatalogProduct, ForWho, Occasion } from "./types";
 
-export const OCCASIONS: { id: Occasion; label: string; emoji: string }[] = [
-  { id: "birthday", label: "Birthday", emoji: "🎂" },
-  { id: "wedding", label: "Wedding", emoji: "💍" },
-  { id: "anniversary", label: "Anniversary", emoji: "💖" },
-  { id: "housewarming", label: "Housewarming", emoji: "🏡" },
-  { id: "baby", label: "Baby Shower", emoji: "🍼" },
-  { id: "justbecause", label: "Just Because", emoji: "✨" },
+export const OCCASIONS: { id: Occasion; label: string }[] = [
+  { id: "birthday", label: "Birthday" },
+  { id: "wedding", label: "Wedding" },
+  { id: "anniversary", label: "Anniversary" },
+  { id: "housewarming", label: "Housewarming" },
+  { id: "justbecause", label: "Just because" },
 ];
 
-export const FOR_WHO: { id: ForWho; label: string; emoji: string }[] = [
-  { id: "her", label: "For Her", emoji: "💁‍♀️" },
-  { id: "him", label: "For Him", emoji: "🙋‍♂️" },
-  { id: "kids", label: "For Kids", emoji: "🧒" },
-  { id: "couple", label: "For a Couple", emoji: "👩‍❤️‍👨" },
+export const FOR_WHO: { id: ForWho; label: string }[] = [
+  { id: "her", label: "For her" },
+  { id: "him", label: "For him" },
 ];
 
-export const VIBES: { id: Vibe; label: string; emoji: string }[] = [
-  { id: "student", label: "Student", emoji: "🎒" },
-  { id: "working", label: "Working", emoji: "💼" },
+export const CATEGORIES: { id: string; label: string }[] = [
+  { id: "beauty", label: "Beauty & Fragrance" },
+  { id: "watches", label: "Watches" },
+  { id: "tech", label: "Tech" },
+  { id: "fashion", label: "Clothing" },
+  { id: "shoes", label: "Shoes" },
+  { id: "accessories", label: "Bags & Jewellery" },
+  { id: "home", label: "Home & Kitchen" },
+  { id: "sports", label: "Sports" },
 ];
 
-export const CATEGORIES: { id: string; label: string; emoji: string }[] = [
-  { id: "beauty", label: "Makeup & Beauty", emoji: "💄" },
-  { id: "tech", label: "Tech & Gadgets", emoji: "🎧" },
-  { id: "decor", label: "Home Decor", emoji: "🕯️" },
-  { id: "fashion", label: "Fashion & Accessories", emoji: "👜" },
-  { id: "toys", label: "Toys & Games", emoji: "🧸" },
-  { id: "kitchen", label: "Kitchen & Dining", emoji: "☕" },
-  { id: "books", label: "Books & Stationery", emoji: "📚" },
-  { id: "selfcare", label: "Self-care & Wellness", emoji: "🧖‍♀️" },
+// Guest-page themes: quiet paper tints, not loud gradients.
+export const THEMES: { id: string; label: string; bg: string; tile: string }[] = [
+  { id: "ivory", label: "Ivory", bg: "#faf7f1", tile: "#f4efe6" },
+  { id: "blush", label: "Blush", bg: "#f9f0ee", tile: "#f3e6e2" },
+  { id: "sage", label: "Sage", bg: "#f1f4ee", tile: "#e9eee2" },
+  { id: "sky", label: "Sky", bg: "#eff3f6", tile: "#e5ecf1" },
+  { id: "lavender", label: "Lavender", bg: "#f2eff7", tile: "#eae5f2" },
 ];
 
-// Pastel gradients for product cards; picked deterministically per product id
-// so a product always shows the same colours everywhere.
-export const GRADIENTS = [
-  "from-pink-200 to-rose-100",
-  "from-violet-200 to-fuchsia-100",
-  "from-sky-200 to-cyan-100",
-  "from-amber-200 to-yellow-100",
-  "from-emerald-200 to-teal-100",
-  "from-orange-200 to-amber-100",
-  "from-indigo-200 to-purple-100",
-  "from-lime-200 to-emerald-100",
-];
-
-export function gradientFor(id: string): string {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return GRADIENTS[h % GRADIENTS.length];
-}
-
-// Guest-page themes.
-export const THEMES: {
-  id: string;
-  label: string;
-  emoji: string;
-  pageBg: string; // gradient behind the whole guest page
-  heroEmojis: string; // decorative emoji row on the guest page
-}[] = [
-  { id: "confetti", label: "Confetti Pop", emoji: "🎉", pageBg: "from-pink-100 via-purple-50 to-sky-100", heroEmojis: "🎂🎈🎉🎁✨" },
-  { id: "roses", label: "Royal Roses", emoji: "🌹", pageBg: "from-rose-100 via-amber-50 to-orange-100", heroEmojis: "💍🌹💐🪔✨" },
-  { id: "hearts", label: "Lovey Dovey", emoji: "💖", pageBg: "from-red-100 via-pink-50 to-rose-100", heroEmojis: "💖💕💘🥰💝" },
-  { id: "sunshine", label: "Sunny Home", emoji: "🌻", pageBg: "from-amber-100 via-yellow-50 to-lime-100", heroEmojis: "🏡🌻🪴☀️🧿" },
-  { id: "clouds", label: "Baby Clouds", emoji: "☁️", pageBg: "from-sky-100 via-indigo-50 to-pink-100", heroEmojis: "☁️🍼🧸⭐👶" },
-];
-
-const ALL: Occasion[] = ["birthday", "wedding", "anniversary", "housewarming", "baby", "justbecause"];
-const ADULT: Occasion[] = ["birthday", "wedding", "anniversary", "justbecause"];
+const CDN = "https://cdn.dummyjson.com/product-images";
 
 function p(
   id: string,
   name: string,
-  emoji: string,
-  price: string,
+  imagePath: string,
+  price: number,
   category: string,
-  amazonQuery: string,
   occasions: Occasion[],
-  forWho: ForWho[],
-  vibe: Vibe = "any"
+  forWho: ForWho,
+  amazonQuery?: string
 ): CatalogProduct {
-  return { id, name, emoji, price, category, amazonQuery, occasions, forWho, vibe };
+  return {
+    id,
+    name,
+    image: `${CDN}/${imagePath}/thumbnail.webp`,
+    price,
+    category,
+    amazonQuery: amazonQuery ?? name,
+    occasions,
+    forWho,
+  };
 }
 
+const BDAY: Occasion[] = ["birthday", "anniversary", "justbecause"];
+const DRESSY: Occasion[] = ["birthday", "wedding", "anniversary"];
+const CASUAL: Occasion[] = ["birthday", "justbecause"];
+const HOMEY: Occasion[] = ["wedding", "housewarming", "anniversary"];
+
 export const PRODUCTS: CatalogProduct[] = [
-  // ------------------------------ beauty ------------------------------
-  p("b1", "Matte Lipstick Set", "💄", "₹299 – ₹799", "beauty", "matte lipstick set", ADULT, ["her"]),
-  p("b2", "Sunscreen SPF 50", "🧴", "₹299 – ₹599", "beauty", "sunscreen spf 50 gel", ADULT, ["her", "him"]),
-  p("b3", "Perfume Gift Set", "🌸", "₹499 – ₹1,499", "beauty", "perfume gift set women", ADULT, ["her"]),
-  p("b4", "Men's Perfume", "🕺", "₹399 – ₹1,299", "beauty", "perfume for men long lasting", ADULT, ["him"]),
-  p("b5", "Nail Polish Combo", "💅", "₹199 – ₹499", "beauty", "nail polish combo set", ["birthday", "justbecause"], ["her"], "student"),
-  p("b6", "Makeup Brush Kit", "🖌️", "₹399 – ₹999", "beauty", "makeup brush set with pouch", ADULT, ["her"]),
-  p("b7", "Lip Balm & Gloss Duo", "💋", "₹149 – ₹399", "beauty", "tinted lip balm gloss", ["birthday", "justbecause"], ["her"], "student"),
-  p("b8", "Hair Serum", "✨", "₹249 – ₹699", "beauty", "hair serum for frizzy hair", ADULT, ["her"]),
-  p("b9", "Beard Grooming Kit", "🧔", "₹399 – ₹999", "beauty", "beard grooming kit men", ADULT, ["him"]),
-  p("b10", "Compact Mirror & Kit Pouch", "🪞", "₹199 – ₹599", "beauty", "makeup pouch with mirror", ADULT, ["her"]),
+  // --------------------------- beauty & fragrance --------------------------
+  p("g1", "Lash Princess Mascara", "beauty/essence-mascara-lash-princess", 499, "beauty", BDAY, "her", "essence lash princess mascara"),
+  p("g2", "Eyeshadow Palette", "beauty/eyeshadow-palette-with-mirror", 899, "beauty", BDAY, "her", "eyeshadow palette with mirror"),
+  p("g3", "Compact Face Powder", "beauty/powder-canister", 599, "beauty", BDAY, "her"),
+  p("g4", "Classic Red Lipstick", "beauty/red-lipstick", 699, "beauty", BDAY, "her", "red lipstick matte"),
+  p("g5", "Nail Polish Set", "beauty/red-nail-polish", 399, "beauty", CASUAL, "her", "nail polish set"),
+  p("g6", "Calvin Klein CK One", "fragrances/calvin-klein-ck-one", 3499, "beauty", DRESSY, "anyone", "calvin klein ck one perfume"),
+  p("g7", "Chanel Coco Noir", "fragrances/chanel-coco-noir-eau-de", 9999, "beauty", DRESSY, "her", "chanel coco noir perfume"),
+  p("g8", "Dior J'adore", "fragrances/dior-j'adore", 8499, "beauty", DRESSY, "her", "dior jadore perfume"),
+  p("g9", "Dolce & Gabbana Shine", "fragrances/dolce-shine-eau-de", 6999, "beauty", DRESSY, "her", "dolce gabbana perfume women"),
+  p("g10", "Gucci Bloom", "fragrances/gucci-bloom-eau-de", 7499, "beauty", DRESSY, "her", "gucci bloom perfume"),
 
-  // ------------------------------- tech -------------------------------
-  p("t1", "Wireless Earbuds", "🎧", "₹999 – ₹2,499", "tech", "wireless earbuds", ADULT, ["her", "him"]),
-  p("t2", "Smartwatch", "⌚", "₹1,299 – ₹2,999", "tech", "smartwatch", ADULT, ["her", "him"]),
-  p("t3", "Bluetooth Speaker", "🔊", "₹999 – ₹2,499", "tech", "bluetooth speaker portable", ADULT, ["her", "him"]),
-  p("t4", "Power Bank 20000mAh", "🔋", "₹999 – ₹1,799", "tech", "power bank 20000mah", ADULT, ["her", "him"]),
-  p("t5", "Phone Stand & Desk Light", "💡", "₹299 – ₹799", "tech", "phone stand desk lamp", ADULT, ["her", "him"], "working"),
-  p("t6", "Instant Photo Printer", "📸", "₹2,999 – ₹6,999", "tech", "mini photo printer", ["birthday", "wedding", "anniversary"], ["her", "him", "couple"]),
-  p("t7", "Gaming Mouse", "🖱️", "₹699 – ₹1,999", "tech", "gaming mouse rgb", ["birthday", "justbecause"], ["him", "kids"], "student"),
-  p("t8", "Kindle / E-reader", "📖", "₹7,999 – ₹12,999", "tech", "kindle e reader", ADULT, ["her", "him"], "working"),
-  p("t9", "Fitness Band", "🏃", "₹1,499 – ₹2,999", "tech", "fitness band", ADULT, ["her", "him"]),
-  p("t10", "Polaroid Camera", "🎞️", "₹5,999 – ₹9,999", "tech", "instax instant camera", ["birthday", "wedding", "anniversary"], ["her", "couple"]),
+  // -------------------------------- watches --------------------------------
+  p("g11", "Brown Leather Strap Watch", "mens-watches/brown-leather-belt-watch", 2999, "watches", DRESSY, "him", "men leather strap analog watch"),
+  p("g12", "Classic Dress Watch", "mens-watches/longines-master-collection", 6999, "watches", DRESSY, "him", "men dress watch"),
+  p("g13", "Black Dial Leather Watch", "mens-watches/rolex-cellini-date-black-dial", 4999, "watches", DRESSY, "him", "men black dial leather watch"),
+  p("g14", "Moonphase Watch", "mens-watches/rolex-cellini-moonphase", 7999, "watches", DRESSY, "him", "moonphase watch men"),
+  p("g15", "Steel Link Watch", "mens-watches/rolex-datejust", 5999, "watches", DRESSY, "him", "men steel analog watch"),
+  p("g16", "Silver Steel Watch", "womens-watches/iwc-ingenieur-automatic-steel", 6499, "watches", DRESSY, "her", "women silver steel watch"),
+  p("g17", "White Dial Classic Watch", "womens-watches/rolex-cellini-moonphase", 7499, "watches", DRESSY, "her", "women white dial watch"),
+  p("g18", "Two-tone Bracelet Watch", "womens-watches/rolex-datejust-women", 6999, "watches", DRESSY, "her", "women two tone watch"),
+  p("g19", "Gold Watch", "womens-watches/watch-gold-for-women", 4999, "watches", DRESSY, "her", "gold watch for women"),
+  p("g20", "Rose Strap Watch", "womens-watches/women's-wrist-watch", 2999, "watches", DRESSY, "her", "women wrist watch"),
 
-  // ------------------------------- decor ------------------------------
-  p("d1", "Fairy Lights", "🧚", "₹199 – ₹499", "decor", "fairy lights for bedroom", ALL, ["her", "him", "couple"], "student"),
-  p("d2", "Scented Candles Set", "🕯️", "₹299 – ₹899", "decor", "scented candles gift set", ALL, ["her", "couple"]),
-  p("d3", "Photo Frame Collage", "🖼️", "₹399 – ₹999", "decor", "photo frame collage wall set", ["wedding", "anniversary", "housewarming"], ["couple"]),
-  p("d4", "Indoor Plants Set", "🪴", "₹299 – ₹799", "decor", "indoor plants with pot", ["housewarming", "justbecause"], ["her", "him", "couple"]),
-  p("d5", "Wall Clock (Aesthetic)", "🕰️", "₹499 – ₹1,499", "decor", "aesthetic wall clock", ["wedding", "housewarming"], ["couple"]),
-  p("d6", "Moon Lamp", "🌙", "₹499 – ₹1,299", "decor", "moon lamp 3d", ["birthday", "anniversary", "justbecause"], ["her", "him", "couple"]),
-  p("d7", "Boho Cushion Covers", "🛋️", "₹399 – ₹999", "decor", "boho cushion covers set", ["housewarming", "wedding"], ["couple"]),
-  p("d8", "Tapestry / Wall Hanging", "🌈", "₹299 – ₹699", "decor", "wall tapestry aesthetic", ["birthday", "housewarming", "justbecause"], ["her", "him"], "student"),
-  p("d9", "Table Lamp (Cute)", "🛋️", "₹599 – ₹1,499", "decor", "bedside table lamp", ["housewarming", "wedding"], ["couple"]),
-  p("d10", "Name LED Neon Sign", "💫", "₹999 – ₹2,499", "decor", "neon sign light bedroom", ["birthday", "anniversary"], ["her", "him", "couple"]),
+  // ---------------------------------- tech ---------------------------------
+  p("g21", "Apple iPhone", "smartphones/iphone-5s", 39999, "tech", BDAY, "anyone", "apple iphone"),
+  p("g22", "Apple Watch", "mobile-accessories/apple-watch-series-4-gold", 29999, "tech", BDAY, "anyone", "apple watch"),
+  p("g23", "Apple MacBook", "laptops/apple-macbook-pro-14-inch-space-grey", 119999, "tech", CASUAL, "anyone", "apple macbook"),
+  p("g24", "Apple iPad Mini", "tablets/ipad-mini-2021-starlight", 46999, "tech", CASUAL, "anyone", "apple ipad mini"),
+  p("g25", "Samsung Galaxy Tab", "tablets/samsung-galaxy-tab-s8-plus-grey", 52999, "tech", CASUAL, "anyone", "samsung galaxy tab"),
+  p("g26", "Amazon Echo Speaker", "mobile-accessories/amazon-echo-plus", 8999, "tech", CASUAL, "anyone", "amazon echo"),
+  p("g27", "Apple AirPods", "mobile-accessories/apple-airpods", 11999, "tech", CASUAL, "anyone", "apple airpods"),
+  p("g28", "Apple AirPods Max", "mobile-accessories/apple-airpods-max-silver", 49999, "tech", CASUAL, "anyone", "apple airpods max"),
+  p("g29", "Wireless Charging Pad", "mobile-accessories/apple-airpower-wireless-charger", 1999, "tech", CASUAL, "anyone", "wireless charger"),
+  p("g30", "Apple HomePod Mini", "mobile-accessories/apple-homepod-mini-cosmic-grey", 9999, "tech", CASUAL, "anyone", "apple homepod mini"),
 
-  // ------------------------------ fashion -----------------------------
-  p("f1", "Analog Watch", "⌚", "₹999 – ₹2,999", "fashion", "analog watch", ADULT, ["her", "him"], "working"),
-  p("f2", "Sneakers", "👟", "₹999 – ₹2,999", "fashion", "casual sneakers", ["birthday", "justbecause"], ["her", "him"], "student"),
-  p("f3", "Tote Bag (Aesthetic)", "👜", "₹299 – ₹899", "fashion", "canvas tote bag aesthetic", ["birthday", "justbecause"], ["her"], "student"),
-  p("f4", "Wallet (Leather)", "👛", "₹499 – ₹1,499", "fashion", "leather wallet", ADULT, ["her", "him"], "working"),
-  p("f5", "Sunglasses", "🕶️", "₹499 – ₹1,499", "fashion", "sunglasses uv protected", ["birthday", "justbecause"], ["her", "him"]),
-  p("f6", "Silver Jewellery Set", "💎", "₹499 – ₹1,999", "fashion", "silver jewellery set women", ["birthday", "wedding", "anniversary"], ["her"]),
-  p("f7", "Silk Scarf / Stole", "🧣", "₹299 – ₹899", "fashion", "silk scarf stole women", ["birthday", "wedding"], ["her"]),
-  p("f8", "Backpack (Laptop)", "🎒", "₹799 – ₹1,999", "fashion", "laptop backpack", ["birthday", "justbecause"], ["her", "him"], "student"),
-  p("f9", "Cufflinks & Tie Set", "👔", "₹499 – ₹1,299", "fashion", "cufflinks tie gift set men", ["wedding", "anniversary"], ["him"], "working"),
-  p("f10", "Hair Accessories Kit", "🎀", "₹199 – ₹499", "fashion", "hair accessories claw clips set", ["birthday", "justbecause"], ["her"], "student"),
+  // -------------------------------- clothing -------------------------------
+  p("g31", "Check Shirt", "mens-shirts/blue-&-black-check-shirt", 1299, "fashion", CASUAL, "him", "men check shirt"),
+  p("g32", "Graphic T-shirt", "mens-shirts/gigabyte-aorus-men-tshirt", 799, "fashion", CASUAL, "him", "men graphic tshirt"),
+  p("g33", "Plaid Shirt", "mens-shirts/man-plaid-shirt", 1499, "fashion", CASUAL, "him", "men plaid shirt"),
+  p("g34", "Short Sleeve Shirt", "mens-shirts/man-short-sleeve-shirt", 999, "fashion", CASUAL, "him", "men casual shirt"),
+  p("g35", "Blue Summer Dress", "tops/blue-frock", 1499, "fashion", CASUAL, "her", "women blue dress"),
+  p("g36", "Floral Summer Dress", "tops/girl-summer-dress", 1299, "fashion", CASUAL, "her", "women summer dress"),
+  p("g37", "Grey Midi Dress", "tops/gray-dress", 1699, "fashion", CASUAL, "her", "women midi dress"),
+  p("g38", "Black Evening Gown", "womens-dresses/black-women's-gown", 4999, "fashion", DRESSY, "her", "women black evening gown"),
+  p("g39", "Corset & Skirt Set", "womens-dresses/corset-leather-with-skirt", 3499, "fashion", CASUAL, "her", "corset skirt set women"),
+  p("g40", "Black Corset Dress", "womens-dresses/corset-with-black-skirt", 2999, "fashion", CASUAL, "her", "black corset dress"),
 
-  // ------------------------------- toys -------------------------------
-  p("y1", "Giant Teddy Bear", "🧸", "₹499 – ₹1,499", "toys", "big teddy bear", ["birthday", "baby", "justbecause"], ["her", "kids"]),
-  p("y2", "LEGO / Building Blocks", "🧱", "₹499 – ₹2,499", "toys", "building blocks set kids", ["birthday", "baby"], ["kids"]),
-  p("y3", "Board Game (Family)", "🎲", "₹499 – ₹1,499", "toys", "family board game", ["birthday", "housewarming", "justbecause"], ["kids", "couple"]),
-  p("y4", "Remote Control Car", "🏎️", "₹699 – ₹1,999", "toys", "remote control car kids", ["birthday"], ["kids"]),
-  p("y5", "Art & Craft Kit", "🎨", "₹299 – ₹899", "toys", "art craft kit kids", ["birthday", "baby"], ["kids"]),
-  p("y6", "Puzzle 1000 pieces", "🧩", "₹399 – ₹999", "toys", "jigsaw puzzle 1000 pieces", ["birthday", "justbecause"], ["her", "him", "kids"]),
-  p("y7", "Soft Toys Combo", "🐻", "₹399 – ₹999", "toys", "soft toys combo", ["baby", "birthday"], ["kids"]),
-  p("y8", "Rubik's Cube Set", "🟩", "₹199 – ₹599", "toys", "rubik cube set", ["birthday", "justbecause"], ["kids", "him"], "student"),
-  p("y9", "Kids' Story Books Set", "📕", "₹299 – ₹799", "toys", "story books for kids set", ["birthday", "baby"], ["kids"]),
-  p("y10", "Baby Care Gift Hamper", "👶", "₹599 – ₹1,499", "toys", "new born baby gift hamper", ["baby"], ["kids", "couple"]),
+  // --------------------------------- shoes ---------------------------------
+  p("g41", "Nike Air Jordan 1", "mens-shoes/nike-air-jordan-1-red-and-black", 12999, "shoes", CASUAL, "him", "nike air jordan 1"),
+  p("g42", "Nike Sports Cleats", "mens-shoes/nike-baseball-cleats", 5999, "shoes", CASUAL, "him", "nike sports shoes men"),
+  p("g43", "Puma Future Rider", "mens-shoes/puma-future-rider-trainers", 6499, "shoes", CASUAL, "him", "puma future rider"),
+  p("g44", "Retro Sneakers", "mens-shoes/sports-sneakers-off-white-&-red", 4999, "shoes", CASUAL, "him", "men retro sneakers"),
+  p("g45", "Court Sneakers", "mens-shoes/sports-sneakers-off-white-red", 4499, "shoes", CASUAL, "him", "men court sneakers"),
+  p("g46", "Cosy Slippers", "womens-shoes/black-&-brown-slipper", 999, "shoes", CASUAL, "her", "women slippers"),
+  p("g47", "Calvin Klein Heels", "womens-shoes/calvin-klein-heel-shoes", 6999, "shoes", DRESSY, "her", "calvin klein heels"),
+  p("g48", "Gold Party Heels", "womens-shoes/golden-shoes-woman", 2999, "shoes", DRESSY, "her", "gold heels women"),
+  p("g49", "Ballet Flats", "womens-shoes/pampi-shoes", 1999, "shoes", CASUAL, "her", "ballet flats women"),
+  p("g50", "Red Heels", "womens-shoes/red-shoes", 2499, "shoes", DRESSY, "her", "red heels women"),
 
-  // ------------------------------ kitchen -----------------------------
-  p("k1", "Ceramic Mug Set", "☕", "₹299 – ₹799", "kitchen", "ceramic coffee mug set", ["housewarming", "wedding", "justbecause"], ["couple", "her", "him"]),
-  p("k2", "Electric Kettle", "🫖", "₹599 – ₹1,299", "kitchen", "electric kettle 1.5 litre", ["housewarming", "wedding"], ["couple"], "working"),
-  p("k3", "Air Fryer", "🍟", "₹2,499 – ₹5,999", "kitchen", "air fryer", ["wedding", "housewarming"], ["couple"]),
-  p("k4", "Coffee Maker (French Press)", "☕", "₹499 – ₹1,499", "kitchen", "french press coffee maker", ["housewarming", "wedding", "birthday"], ["her", "him", "couple"], "working"),
-  p("k5", "Dinner Set", "🍽️", "₹999 – ₹2,999", "kitchen", "dinner set", ["wedding", "housewarming"], ["couple"]),
-  p("k6", "Insulated Water Bottle", "🥤", "₹399 – ₹999", "kitchen", "insulated water bottle 1 litre", ["birthday", "justbecause"], ["her", "him", "kids"], "student"),
-  p("k7", "Masala Box & Jars Set", "🫙", "₹399 – ₹999", "kitchen", "masala box kitchen storage jars", ["wedding", "housewarming"], ["couple"]),
-  p("k8", "Chopper & Kitchen Tools", "🔪", "₹299 – ₹799", "kitchen", "vegetable chopper kitchen tool set", ["housewarming", "wedding"], ["couple"]),
-  p("k9", "Bento Lunch Box", "🍱", "₹399 – ₹999", "kitchen", "bento lunch box office", ["birthday", "justbecause"], ["her", "him"], "working"),
-  p("k10", "Chocolate Gift Hamper", "🍫", "₹399 – ₹1,299", "kitchen", "chocolate gift hamper", ALL, ["her", "him", "kids", "couple"]),
+  // ---------------------------- bags & jewellery ---------------------------
+  p("g51", "Blue Handbag", "womens-bags/blue-women's-handbag", 2499, "accessories", DRESSY, "her", "women handbag blue"),
+  p("g52", "Leather Tote Bag", "womens-bags/heshe-women's-leather-bag", 5999, "accessories", DRESSY, "her", "women leather tote bag"),
+  p("g53", "Designer Handbag", "womens-bags/prada-women-bag", 15999, "accessories", DRESSY, "her", "designer handbag women"),
+  p("g54", "White Mini Backpack", "womens-bags/white-faux-leather-backpack", 1999, "accessories", CASUAL, "her", "women mini backpack"),
+  p("g55", "Black Handbag", "womens-bags/women-handbag-black", 2999, "accessories", DRESSY, "her", "women handbag black"),
+  p("g56", "Crystal Earrings", "womens-jewellery/green-crystal-earring", 1499, "accessories", DRESSY, "her", "crystal earrings"),
+  p("g57", "Emerald Drop Earrings", "womens-jewellery/green-oval-earring", 1999, "accessories", DRESSY, "her", "emerald drop earrings"),
+  p("g58", "Tropical Earrings", "womens-jewellery/tropical-earring", 999, "accessories", CASUAL, "her", "statement earrings"),
+  p("g59", "Black Sunglasses", "sunglasses/black-sun-glasses", 1499, "accessories", CASUAL, "anyone", "black sunglasses"),
+  p("g60", "Round Sunglasses", "sunglasses/classic-sun-glasses", 1299, "accessories", CASUAL, "anyone", "round sunglasses"),
 
-  // ------------------------------- books ------------------------------
-  p("bk1", "Bestseller Fiction Novel", "📖", "₹199 – ₹499", "books", "bestseller fiction novels", ADULT, ["her", "him"]),
-  p("bk2", "Self-help Bestseller", "🧠", "₹199 – ₹499", "books", "atomic habits book", ADULT, ["her", "him"], "working"),
-  p("bk3", "Journal & Planner", "📓", "₹299 – ₹799", "books", "daily planner journal aesthetic", ADULT, ["her", "him"], "working"),
-  p("bk4", "Fountain Pen Set", "🖋️", "₹399 – ₹1,299", "books", "fountain pen gift set", ["birthday", "anniversary"], ["him", "her"], "working"),
-  p("bk5", "Scrapbook / Memory Book", "📔", "₹299 – ₹699", "books", "scrapbook memory book diy", ["anniversary", "birthday"], ["her", "couple"], "student"),
-  p("bk6", "Desk Organiser (Wooden)", "🗂️", "₹399 – ₹999", "books", "wooden desk organiser", ["birthday", "justbecause"], ["him", "her"], "working"),
-  p("bk7", "Sketching & Drawing Kit", "✏️", "₹299 – ₹899", "books", "sketching pencils drawing kit", ["birthday"], ["kids", "her", "him"], "student"),
-  p("bk8", "Poetry / Shayari Collection", "🌙", "₹149 – ₹399", "books", "poetry books collection", ["birthday", "justbecause"], ["her", "him"], "student"),
-  p("bk9", "Cute Sticky Notes & Pens", "🖍️", "₹149 – ₹399", "books", "cute stationery set sticky notes gel pens", ["birthday", "justbecause"], ["her", "kids"], "student"),
-  p("bk10", "Bookends & Book Lights", "💡", "₹299 – ₹799", "books", "book reading light bookends", ["birthday", "justbecause"], ["her", "him"]),
+  // ------------------------------ home & kitchen ---------------------------
+  p("g61", "Hanging Swing Chair", "home-decoration/decoration-swing", 4999, "home", HOMEY, "anyone", "hanging swing chair"),
+  p("g62", "Photo Frame Collage", "home-decoration/family-tree-photo-frame", 1499, "home", HOMEY, "anyone", "photo frame collage wall"),
+  p("g63", "Decorative Plant", "home-decoration/house-showpiece-plant", 1999, "home", HOMEY, "anyone", "artificial plant decor"),
+  p("g64", "Ceramic Planter", "home-decoration/plant-pot", 899, "home", HOMEY, "anyone", "ceramic planter pot"),
+  p("g65", "Table Lamp", "home-decoration/table-lamp", 2499, "home", HOMEY, "anyone", "bedside table lamp"),
+  p("g66", "Wooden Bedside Table", "furniture/bedside-table-african-cherry", 8999, "home", HOMEY, "anyone", "wooden bedside table"),
+  p("g67", "Designer Desk Chair", "furniture/knoll-saarinen-executive-conference-chair", 13999, "home", HOMEY, "anyone", "designer desk chair"),
+  p("g68", "Microwave Oven", "kitchen-accessories/microwave-oven", 6999, "home", HOMEY, "anyone", "microwave oven"),
+  p("g69", "Blender", "kitchen-accessories/boxed-blender", 2999, "home", HOMEY, "anyone", "blender mixer"),
+  p("g70", "Steel & Glass Cook Pot", "kitchen-accessories/silver-pot-with-glass-cap", 1999, "home", HOMEY, "anyone", "steel cooking pot glass lid"),
 
-  // ----------------------------- selfcare -----------------------------
-  p("s1", "Spa Gift Hamper", "🧖‍♀️", "₹499 – ₹1,499", "selfcare", "spa gift hamper women", ADULT, ["her"]),
-  p("s2", "Yoga Mat", "🧘", "₹499 – ₹1,299", "selfcare", "yoga mat anti slip", ADULT, ["her", "him"]),
-  p("s3", "Essential Oil Diffuser", "💨", "₹499 – ₹1,299", "selfcare", "aroma diffuser essential oil set", ["housewarming", "birthday", "anniversary"], ["her", "couple"]),
-  p("s4", "Silk Pillowcase & Eye Mask", "😴", "₹399 – ₹999", "selfcare", "silk pillowcase eye mask set", ["birthday", "wedding"], ["her"]),
-  p("s5", "Neck & Back Massager", "💆", "₹999 – ₹2,499", "selfcare", "neck back massager", ADULT, ["her", "him"], "working"),
-  p("s6", "Green Tea / Herbal Tea Set", "🍵", "₹299 – ₹799", "selfcare", "herbal green tea gift set", ADULT, ["her", "him"], "working"),
-  p("s7", "Skincare Gift Kit", "🧴", "₹499 – ₹1,499", "selfcare", "skincare gift set", ADULT, ["her"]),
-  p("s8", "Gratitude Journal", "🙏", "₹249 – ₹599", "selfcare", "gratitude journal", ADULT, ["her", "him"]),
-  p("s9", "Bath Bombs & Shower Set", "🛁", "₹299 – ₹899", "selfcare", "bath bombs gift set", ["birthday", "justbecause"], ["her"], "student"),
-  p("s10", "Sipper + Gym Kit", "🏋️", "₹499 – ₹1,299", "selfcare", "gym shaker bottle kit", ["birthday", "justbecause"], ["him", "her"], "student"),
+  // --------------------------------- sports --------------------------------
+  p("g71", "Cricket Bat", "sports-accessories/cricket-bat", 1999, "sports", CASUAL, "anyone", "cricket bat"),
+  p("g72", "Cricket Ball", "sports-accessories/cricket-ball", 599, "sports", CASUAL, "anyone", "leather cricket ball"),
+  p("g73", "Cricket Helmet", "sports-accessories/cricket-helmet", 2499, "sports", CASUAL, "anyone", "cricket helmet"),
+  p("g74", "Football", "sports-accessories/football", 1299, "sports", CASUAL, "anyone", "football size 5"),
+  p("g75", "Basketball", "sports-accessories/basketball", 999, "sports", CASUAL, "anyone", "basketball"),
+  p("g76", "Volleyball", "sports-accessories/volleyball", 799, "sports", CASUAL, "anyone", "volleyball"),
+  p("g77", "Tennis Racket", "sports-accessories/tennis-racket", 2999, "sports", CASUAL, "anyone", "tennis racket"),
+  p("g78", "Tennis Balls (Pack)", "sports-accessories/tennis-ball", 499, "sports", CASUAL, "anyone", "tennis balls pack"),
+  p("g79", "Feather Shuttlecocks", "sports-accessories/feather-shuttlecock", 699, "sports", CASUAL, "anyone", "feather shuttlecock badminton"),
+  p("g80", "Baseball Glove", "sports-accessories/baseball-glove", 1499, "sports", CASUAL, "anyone", "baseball glove"),
 ];
+
+export function formatINR(n: number): string {
+  return `₹${n.toLocaleString("en-IN")}`;
+}

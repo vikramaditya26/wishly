@@ -1,10 +1,9 @@
 "use client";
 
-// The gift grid on the guest page. Handles claiming ("calling dibs"),
-// undo (via a claim token kept in the guest's localStorage), and buy links.
+// The gift grid on the guest page. Handles reserving a gift, undo (via a
+// claim token kept in the guest's localStorage), and affiliate buy links.
 
 import { useEffect, useState } from "react";
-import { gradientFor } from "@/lib/catalog";
 import { withAffiliateTag } from "@/lib/config";
 import type { BasketItem } from "@/lib/types";
 
@@ -28,11 +27,11 @@ function saveToken(itemId: string, token: string | null) {
 export function ClaimGrid({
   shareId,
   initialItems,
-  hostName,
+  tileColor,
 }: {
   shareId: string;
   initialItems: BasketItem[];
-  hostName: string;
+  tileColor: string;
 }) {
   const [items, setItems] = useState(initialItems);
   const [claiming, setClaiming] = useState<BasketItem | null>(null);
@@ -66,7 +65,7 @@ export function ClaimGrid({
             prev.map((i) => (i.id === claiming.id ? { ...i, claimedBy: "someone" } : i))
           );
         }
-        throw new Error(data.error || "Something went wrong 😭");
+        throw new Error(data.error || "Something went wrong.");
       }
       setItems((prev) =>
         prev.map((i) => (i.id === claiming.id ? { ...i, claimedBy: guestName.trim() } : i))
@@ -78,7 +77,7 @@ export function ClaimGrid({
       } catch {}
       setClaiming(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong 😭");
+      setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
       setBusy(false);
     }
@@ -99,88 +98,92 @@ export function ClaimGrid({
     }
   }
 
-  const firstName = hostName.split(" ")[0];
-
   return (
     <>
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-4">
         {items.map((item) => {
           const claimed = !!item.claimedBy;
           const mine = !!myTokens[item.id];
           return (
             <div
               key={item.id}
-              className={`rounded-3xl p-4 bg-white shadow-sm border-2 transition ${
-                claimed ? (mine ? "border-emerald-300" : "border-slate-100 opacity-70") : "border-transparent"
+              className={`rounded-2xl bg-white/80 border border-black/5 overflow-hidden ${
+                claimed && !mine ? "opacity-60" : ""
               }`}
             >
-              {item.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={item.imageUrl}
-                  alt={item.name}
-                  className="rounded-2xl h-24 w-full object-cover"
-                />
-              ) : (
-                <div
-                  className={`rounded-2xl bg-gradient-to-br ${gradientFor(item.id)} h-24 flex items-center justify-center text-4xl`}
-                >
-                  {item.emoji || "🎁"}
-                </div>
-              )}
-              <p className="mt-2 font-bold text-sm text-slate-800 leading-tight">{item.name}</p>
-              {item.price && <p className="text-xs text-slate-500 mt-0.5">{item.price}</p>}
+              <div
+                className="aspect-square p-5 flex items-center justify-center"
+                style={{ background: tileColor }}
+              >
+                {item.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
+                    loading="lazy"
+                    className="max-h-full max-w-full object-contain mix-blend-multiply"
+                  />
+                ) : (
+                  <span className="font-display text-4xl text-[var(--muted)]">
+                    {item.name.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className="p-3">
+                <p className="text-sm font-medium leading-snug line-clamp-2">{item.name}</p>
+                {item.price && <p className="text-sm text-[var(--muted)] mt-0.5">{item.price}</p>}
 
-              {claimed ? (
-                mine ? (
-                  <div className="mt-2">
-                    <p className="text-xs font-bold text-emerald-600">You&apos;re gifting this ✨</p>
-                    <div className="mt-1.5 flex flex-col gap-1.5">
+                {claimed ? (
+                  mine ? (
+                    <div className="mt-2.5 space-y-1.5">
+                      <p className="text-xs font-medium">You&apos;re gifting this.</p>
                       {item.url && (
                         <a
                           href={withAffiliateTag(item.url)}
                           target="_blank"
                           rel="noopener noreferrer nofollow"
-                          className="text-center text-xs font-bold py-2 rounded-full bg-amber-400 text-amber-900 hover:bg-amber-500 transition"
+                          className="block text-center text-sm font-medium py-1.5 rounded-full bg-[var(--ink)] text-white hover:opacity-90 transition"
                         >
-                          Buy it 🛒
+                          Buy on Amazon
                         </a>
                       )}
-                      <button onClick={() => unclaim(item)} className="text-xs text-slate-400 underline">
-                        changed my mind, undo
+                      <button
+                        onClick={() => unclaim(item)}
+                        className="w-full text-xs text-[var(--muted)] underline underline-offset-2"
+                      >
+                        Undo
                       </button>
                     </div>
-                  </div>
+                  ) : (
+                    <p className="mt-2.5 text-xs text-[var(--muted)]">
+                      Reserved by {item.claimedBy}
+                    </p>
+                  )
                 ) : (
-                  <p className="mt-2 text-xs font-bold text-slate-400">🎁 {item.claimedBy} is gifting this</p>
-                )
-              ) : (
-                <button
-                  onClick={() => {
-                    setError("");
-                    setClaiming(item);
-                  }}
-                  className="mt-2 w-full py-2 rounded-full bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 active:scale-95 transition"
-                >
-                  I&apos;ll gift this 🫶
-                </button>
-              )}
+                  <button
+                    onClick={() => {
+                      setError("");
+                      setClaiming(item);
+                    }}
+                    className="mt-2.5 w-full py-1.5 rounded-full text-sm font-medium border border-[var(--ink)]/25 hover:border-[var(--ink)] transition"
+                  >
+                    Reserve
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* claim modal */}
+      {/* reserve modal */}
       {claiming && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm animate-popin text-center">
-            <div className="text-4xl">🤫</div>
-            <h3 className="font-display text-xl font-extrabold text-slate-800 mt-2">Calling dibs on</h3>
-            <p className="font-bold text-violet-600 mt-1">
-              {claiming.emoji || "🎁"} {claiming.name}
-            </p>
-            <p className="text-xs text-slate-500 mt-2">
-              Just your name, so nobody else buys the same gift for {firstName} 😉
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm animate-rise">
+            <h3 className="font-display text-2xl">Reserve this gift</h3>
+            <p className="text-sm font-medium mt-1">{claiming.name}</p>
+            <p className="text-sm text-[var(--muted)] mt-3">
+              Just your name, so no one else brings the same thing.
             </p>
             <input
               value={guestName}
@@ -188,22 +191,22 @@ export function ClaimGrid({
               placeholder="Your name"
               maxLength={60}
               autoFocus
-              className="mt-4 w-full rounded-2xl border border-slate-200 px-4 py-3 text-center focus:outline-none focus:ring-2 focus:ring-violet-300"
+              className="input mt-4"
             />
-            {error && <p className="mt-2 text-xs font-bold text-rose-600">{error}</p>}
-            <div className="mt-4 flex gap-3">
+            {error && <p className="mt-2 text-sm text-[var(--accent)]">{error}</p>}
+            <div className="mt-5 flex gap-3">
               <button
                 onClick={() => setClaiming(null)}
-                className="flex-1 py-3 rounded-full border border-slate-200 font-bold text-slate-500 text-sm"
+                className="flex-1 py-2.5 rounded-full border border-[var(--line)] text-sm font-medium text-[var(--muted)]"
               >
                 Cancel
               </button>
               <button
                 onClick={claim}
                 disabled={busy || !guestName.trim()}
-                className="flex-1 py-3 rounded-full bg-violet-600 text-white font-bold text-sm disabled:opacity-40"
+                className="flex-1 py-2.5 rounded-full bg-[var(--ink)] text-white text-sm font-medium disabled:opacity-30"
               >
-                {busy ? "…" : "Dibs! 🙋"}
+                {busy ? "…" : "Reserve"}
               </button>
             </div>
           </div>

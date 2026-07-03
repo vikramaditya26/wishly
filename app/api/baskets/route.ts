@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStore, NewBasketInput } from "@/lib/store";
 import type { BasketItem, Occasion } from "@/lib/types";
 
-const OCCASIONS: Occasion[] = ["birthday", "wedding", "anniversary", "housewarming", "baby", "justbecause"];
+const OCCASIONS: Occasion[] = ["birthday", "wedding", "anniversary", "housewarming", "justbecause"];
 
 const clean = (v: unknown, max: number) =>
   typeof v === "string" ? v.trim().slice(0, max) : "";

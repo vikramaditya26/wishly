@@ -22,15 +22,17 @@ export default async function ManagePage({
 
   if (!basket) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-pink-50 to-sky-50 flex flex-col items-center justify-center px-6 text-center">
-        <div className="text-6xl">🔒</div>
-        <h1 className="font-display text-2xl font-extrabold text-slate-700 mt-4">Can&apos;t open this</h1>
-        <p className="text-slate-500 mt-2 text-sm max-w-sm">
-          This needs your secret manage link (the one we showed when you created the wishlist). Check the exact link — it
-          includes a key after the &quot;?&quot;.
+      <main className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+        <h1 className="font-display text-3xl">This page is private.</h1>
+        <p className="text-[var(--muted)] mt-3 text-sm max-w-sm">
+          It opens only with your full manage link — the one shown when you created the list,
+          including the key after the &quot;?&quot;.
         </p>
-        <Link href="/" className="mt-6 px-6 py-3 rounded-full bg-violet-600 text-white font-bold">
-          ← back to {SITE_NAME}
+        <Link
+          href="/"
+          className="mt-8 px-6 py-2.5 rounded-full bg-[var(--ink)] text-white text-sm font-medium"
+        >
+          Back to {SITE_NAME}
         </Link>
       </main>
     );
@@ -40,46 +42,36 @@ export default async function ManagePage({
   const claimed = basket.items.filter((i) => i.claimedBy);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-pink-50 via-violet-50 to-sky-50 px-4 py-12">
-      <div className="max-w-xl mx-auto">
-        <Link href="/" className="font-display text-xl font-extrabold text-violet-600">
-          {SITE_NAME} 🎀
-        </Link>
-        <h1 className="font-display text-3xl font-extrabold text-slate-800 mt-4">
-          Your {occ?.label ?? "wishlist"} basket {occ?.emoji}
+    <main className="min-h-screen px-6 py-14">
+      <div className="max-w-lg mx-auto">
+        <p className="font-display text-2xl">{SITE_NAME}</p>
+        <h1 className="font-display text-4xl mt-10">
+          Your {occ ? occ.label.toLowerCase() : ""} list
         </h1>
-        <p className="text-slate-600 text-sm mt-1">
-          {claimed.length} of {basket.items.length} gifts claimed so far 🎉
+        <p className="text-[var(--muted)] text-sm mt-2">
+          {claimed.length} of {basket.items.length} gifts reserved. Refresh anytime for updates.
         </p>
 
         <ShareBox shareId={basket.shareId} />
 
-        <div className="mt-6 space-y-2">
+        <div className="mt-8 divide-y divide-[var(--line)] border-y border-[var(--line)]">
           {basket.items.map((item) => (
-            <div
-              key={item.id}
-              className="bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3"
-            >
-              <span className="text-2xl">{item.emoji || "🎁"}</span>
+            <div key={item.id} className="py-3.5 flex items-center gap-4">
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm text-slate-800 truncate">{item.name}</p>
-                {item.price && <p className="text-xs text-slate-400">{item.price}</p>}
+                <p className="text-sm font-medium truncate">{item.name}</p>
+                {item.price && <p className="text-xs text-[var(--muted)] mt-0.5">{item.price}</p>}
               </div>
               {item.claimedBy ? (
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full whitespace-nowrap">
-                  🎁 {item.claimedBy}
-                </span>
+                <span className="text-sm font-medium whitespace-nowrap">{item.claimedBy}</span>
               ) : (
-                <span className="text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-full whitespace-nowrap">
-                  waiting…
-                </span>
+                <span className="text-sm text-[var(--muted)] whitespace-nowrap">—</span>
               )}
             </div>
           ))}
         </div>
 
-        <p className="mt-8 text-xs text-slate-400 text-center">
-          Tip: bookmark this page — it&apos;s your private dashboard. Refresh anytime to see new claims.
+        <p className="mt-8 text-xs text-[var(--muted)]">
+          Bookmark this page — it&apos;s your private dashboard.
         </p>
       </div>
     </main>

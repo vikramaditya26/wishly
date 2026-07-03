@@ -26,8 +26,13 @@ ilovepdf for "simple tool everyone uses".
    Guests only type their first name when claiming.
 2. **Minimum typing.** Choices are tap-only (chips, cards); typing appears only
    at the last step (name/message) and when claiming (name).
-3. **Cute, Gen-Z, emoji-heavy voice** in ALL UI copy ("call dibs", "Making
-   magic… ✨"). Keep it playful but never confusing.
+3. **Editorial, quiet, premium tone — NO emoji in the UI.** The owner
+   explicitly rejected a first version that was pastel-gradient + emoji-heavy
+   ("cringe"). Voice: short, warm, confident sentences ("Three people brought
+   you the same perfume. Never again."). Copy is minimal — every extra
+   sentence must earn its place. References the owner likes:
+   heywavelength.com, Zepto product cards, and his own `crushky` project
+   (Playfair Display + DM Sans, cream/ink palette).
 4. **Free hosting forever**: must stay within Vercel + Supabase free tiers.
 5. Amazon links must ALWAYS carry the affiliate tag — use `withAffiliateTag()`
    or `amazonSearchLink()` from `lib/config.ts`, never hand-build URLs.
@@ -36,10 +41,17 @@ ilovepdf for "simple tool everyone uses".
 
 - **Next.js 15 (App Router, TypeScript) + Tailwind CSS v4** (via
   `@tailwindcss/postcss`; NO tailwind.config file — v4 style).
-- **Fonts**: `next/font/google` — Baloo 2 (`--font-baloo`, headings via
-  `.font-display`) and Nunito (`--font-nunito`, body). Wired in
+- **Design system** (see `app/globals.css` tokens): warm paper background
+  `--bg #faf7f1`, white cards, `--tile #f4efe6` image tiles, ink `#1c1a17`,
+  muted `#96907f`, hairlines `--line #e9e2d4`, terracotta accent `#9d4433`
+  (used sparingly — errors/links). Buttons are ink-filled or hairline-outline
+  pills; cards are rounded-2xl with 1px borders, no drop shadows except the
+  sticky bar. Product photos sit on the tile colour with
+  `mix-blend-multiply` so white-background shots blend in.
+- **Fonts**: `next/font/google` — Playfair Display (`--font-playfair`,
+  headings via `.font-display`) and DM Sans (`--font-dm`, body). Wired in
   `app/globals.css`. NOTE: the font CSS variables are set on `<body>` by
-  next/font, so reference `var(--font-nunito)` etc. directly in selectors —
+  next/font, so reference `var(--font-dm)` etc. directly in selectors —
   do NOT chain them through `@theme` at `:root` (they won't resolve there;
   this bug was hit and fixed on day 1).
 - **Data**: Supabase Postgres, accessed ONLY from server code with the
@@ -69,11 +81,11 @@ ilovepdf for "simple tool everyone uses".
 | Path | What it is |
 |---|---|
 | `lib/config.ts` | Site name, tagline, affiliate tag, `withAffiliateTag()` helper. Owner edits this. |
-| `lib/catalog.ts` | The 8 categories × 10 curated products, occasion/for-who/vibe filter definitions, 5 guest-page themes, card gradients. Products link to affiliate-tagged amazon.in SEARCH results (not ASINs — they go stale). |
+| `lib/catalog.ts` | The 8 categories × 10 curated products with real product photos (cdn.dummyjson.com — free stable CDN; swap for own images someday), occasion/for-who filters, 5 guest-page themes (quiet paper tints). Products link to affiliate-tagged amazon.in SEARCH results (not ASINs — they go stale). Luxury source items were renamed generic + given realistic INR prices. |
 | `lib/types.ts` | Shared TypeScript types. |
 | `lib/store.ts` | Storage interface + Supabase and in-memory implementations. |
-| `app/page.tsx` | Landing page (static). |
-| `app/create/page.tsx` | Basket builder (client): filters → grid → custom-product modal → details/theme → success screen with share + manage links, WhatsApp share. |
+| `app/page.tsx` | THE page (client): short hero + list builder + details step + success screen with share/manage links and WhatsApp share — the whole creator flow is this single page. |
+| `app/create/page.tsx` | Redirects to `/` (the builder used to live here). |
 | `app/b/[shareId]/page.tsx` | Guest page (dynamic, themed hero + message). |
 | `components/ClaimGrid.tsx` | Client claim/undo UI, affiliate buy buttons. |
 | `app/manage/[shareId]/page.tsx` | Creator dashboard (needs `?key=`). |
@@ -85,14 +97,18 @@ ilovepdf for "simple tool everyone uses".
 
 ## 4. Conventions
 
-- UI copy: lowercase-casual headlines, emoji allowed everywhere, Hindi-English
-  blend acceptable where natural. Buttons: rounded-full; cards: rounded-3xl;
-  pastel gradients from `GRADIENTS` in catalog.
+- UI copy: sentence case, short, no emoji, no exclamation-mark enthusiasm.
+  "Reserve" (not "claim/dibs") is the guest-facing verb.
 - All user input is length-capped and trimmed server-side in the API routes —
   keep doing that for any new field.
-- Product images: curated products deliberately use emoji-on-gradient tiles
-  (no hotlinked Amazon images — against Amazon ToS; no stock URLs — they rot).
-  User-added items may have an `imageUrl` (rendered with plain `<img>`).
+- Product images: real photos from cdn.dummyjson.com (never hotlink Amazon
+  images — against their ToS). User-added items may have an `imageUrl`
+  (rendered with plain `<img>`); items without one show a serif initial on
+  the tile colour.
+- The owner removed the affiliate-disclosure line from the footer (didn't
+  like it). NOTE for future: Amazon Associates ToS requires a disclosure
+  somewhere on the site — revisit before scaling up affiliate use (a small
+  /about page would satisfy it).
 - Mobile-first: test at 375px width first.
 - Guests' claim names are visible to anyone with the share link (including the
   creator). Don't promise anonymity in copy.
@@ -147,3 +163,15 @@ owner-facing step-by-step.
   purchases"). Keep this line present somewhere visible — it's an Amazon
   Associates program requirement. Also generated `Wishly-Idea-Validation.docx`
   (market/competitor/monetization report for the owner; not part of the app).
+- **2026-07-03 (v2 redesign)** — Owner rejected v1's look ("cringe": pastel
+  gradients, emoji everywhere, too much copy). Full redesign to an editorial
+  aesthetic: Playfair Display + DM Sans, cream/ink/terracotta tokens, zero
+  emoji, drastically shorter copy, "Reserve" wording. Builder merged into the
+  home page (single-page flow; `/create` now redirects). Catalog rebuilt with
+  real product photos from cdn.dummyjson.com (8 cats × 10; luxury items
+  renamed generic with realistic INR prices; Sports category added; Toys/Baby
+  dropped — no matching photos; "baby" occasion and "vibe" filter removed
+  from types/UI). Guest-page themes are now 5 quiet paper tints. Footer
+  affiliate-disclosure line removed at owner's request (see Conventions note).
+  Verified end-to-end in preview (create → share → reserve → undo-token →
+  manage) in demo mode.
