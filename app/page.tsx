@@ -84,7 +84,7 @@ export default function Home() {
       </section>
 
       <footer className="text-center text-xs text-slate-400 pb-8 px-6">
-        Made with 💜 in India · {SITE_NAME} may earn a small commission from Amazon links (at no cost to you) — that&apos;s how it stays free.
+        Made with 💜 in India · As an Amazon Associate, {SITE_NAME} earns from qualifying purchases (at no extra cost to you) — that&apos;s how it stays free.
       </footer>
     </main>
   );

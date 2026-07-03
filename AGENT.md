@@ -142,3 +142,8 @@ owner-facing step-by-step.
   must not be chained via `@theme` (see §3). Verified locally end-to-end
   (create → share → claim → undo → manage) in demo mode; Supabase path is
   written but NOT yet tested against a real Supabase project.
+- **2026-07-03** — Footer disclosure on the landing page updated to Amazon's
+  required wording ("As an Amazon Associate … earns from qualifying
+  purchases"). Keep this line present somewhere visible — it's an Amazon
+  Associates program requirement. Also generated `Wishly-Idea-Validation.docx`
+  (market/competitor/monetization report for the owner; not part of the app).
