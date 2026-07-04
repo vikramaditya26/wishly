@@ -54,13 +54,20 @@ ilovepdf for "simple tool everyone uses".
   next/font, so reference `var(--font-dm)` etc. directly in selectors —
   do NOT chain them through `@theme` at `:root` (they won't resolve there;
   this bug was hit and fixed on day 1).
-- **Data**: Supabase Postgres, accessed ONLY from server code with the
-  service-role key (env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`). No
-  client-side Supabase, no RLS policies needed (RLS is enabled with no
-  policies = locked; service role bypasses it).
-- **Demo mode**: if env vars are missing, `lib/store.ts` falls back to an
-  in-memory Map (survives HMR via `globalThis`). Never assume persistence in
-  demo mode.
+- **Data**: Supabase Postgres, accessed ONLY from server code via the
+  `postgres` (postgres.js) client and a single env var `DATABASE_URL`
+  pointing at Supabase's **transaction pooler**
+  (`aws-1-ap-southeast-2.pooler.supabase.com:6543`, project
+  `qilzahxlaxumzpiolhji`). We deliberately do NOT use supabase-js/API keys:
+  this project uses Supabase's new API-key format and its legacy JWT keys are
+  rejected (`UNAUTHORIZED_INVALID_API_KEY_TYPE`), so direct Postgres is both
+  simpler and the only path that was available. `prepare: false` is required
+  (transaction pooling); the client is a `globalThis` singleton. RLS is
+  enabled with no policies — irrelevant to us (we connect as table owner) but
+  keeps PostgREST locked.
+- **Demo mode**: if `DATABASE_URL` is missing, `lib/store.ts` falls back to
+  an in-memory Map (survives HMR via `globalThis`). Never assume persistence
+  in demo mode.
 - **IDs**: nanoid custom alphabet (no 0/O/1/l). `shareId` (10 chars, public)
   and `manageKey` (24 chars, secret) — the manage key IS the auth.
 
@@ -125,9 +132,9 @@ open share link → claim with a name → check manage link shows the claim.
 
 ## 6. Deployment
 
-GitHub repo → Vercel (auto-deploy on push). Env vars `SUPABASE_URL` and
-`SUPABASE_SERVICE_ROLE_KEY` must be set in Vercel. See README for the
-owner-facing step-by-step.
+GitHub repo (vikramaditya26/wishly) → Vercel (auto-deploy on push). The env
+var `DATABASE_URL` must be set in Vercel (same value as `.env.local`). See
+README for the owner-facing step-by-step.
 
 ## 7. Future plans / ideas (not built yet)
 
@@ -185,3 +192,14 @@ owner-facing step-by-step.
   Owner's Supabase project exists (qilzahxlaxumzpiolhji, URL prefilled in
   `.env.local`); still pending: run `supabase/schema.sql` in its SQL editor
   and set SUPABASE_SERVICE_ROLE_KEY locally + on Vercel.
+- **2026-07-04 (later)** — Database fully connected. Owner's project rejects
+  legacy JWT API keys, so the store was rewritten from supabase-js to direct
+  Postgres via postgres.js (`DATABASE_URL`, transaction pooler, region
+  ap-southeast-2 — found by probing since the dashboard wasn't accessible
+  from here). supabase-js dependency removed. Schema confirmed in the live
+  DB; full flow (create → claim → guest/manage render → wrong-key rejection)
+  tested against production Supabase and test rows cleaned up afterwards.
+  `outputFileTracingRoot` pinned in next.config.ts (stray lockfile in the
+  user's home folder confused Next's root detection). Vercel needs ONE env
+  var now: `DATABASE_URL`. Note: `next dev` (incl. preview tooling) and
+  `next build` must not run at the same time — they corrupt `.next`.

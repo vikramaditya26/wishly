@@ -26,16 +26,15 @@ the server. Good enough for playing around.
 ### Step 1 — Create a free Supabase database
 
 1. Go to [supabase.com](https://supabase.com) → **Start your project** → sign in with GitHub or Google.
-2. **New project** → give it any name (e.g. `wishly`) → choose the region **Mumbai (ap-south-1)** → set any database password (you won't need it again) → **Create**.
-3. Wait ~2 minutes for the project to be ready.
-4. In the left sidebar open **SQL Editor** → **New query** → copy ALL of the file [`supabase/schema.sql`](supabase/schema.sql) from this repo, paste it, press **Run**. You should see "Success".
-5. In the left sidebar open **Settings → API**. Keep this page open — you need two values:
-   - **Project URL** (looks like `https://abcdefgh.supabase.co`)
-   - **service_role key** (under "Project API keys" — click reveal). ⚠️ This key is secret. Never share it or put it in normal code — only in the env settings below.
+2. **New project** → give it any name (e.g. `wishly`) → set a database password (SAVE it — you need it below) → **Create**.
+3. Wait ~2 minutes, then open **SQL Editor** → **New query** → copy ALL of [`supabase/schema.sql`](supabase/schema.sql), paste, **Run**.
 
-### Step 2 — Put the keys in the project
+### Step 2 — Put the connection string in the project
 
-For local use: copy `.env.example` to a new file called `.env.local` and fill in the two values.
+1. In the dashboard click **Connect** (top bar) → copy the **Transaction pooler** string. It looks like
+   `postgresql://postgres.abc123:[YOUR-PASSWORD]@aws-1-xx.pooler.supabase.com:6543/postgres`.
+2. Replace `[YOUR-PASSWORD]` with your database password. If the password has special characters, URL-encode them (`@`→`%40`, `#`→`%23`, `$`→`%24`, `%`→`%25`).
+3. Copy `.env.example` to a new file called `.env.local` and set `DATABASE_URL=` to that string.
 
 ### Step 3 — Put it on the internet (GitHub + Vercel, all free)
 
@@ -46,8 +45,7 @@ For local use: copy `.env.example` to a new file called `.env.local` and fill in
    ```
 2. Go to [vercel.com](https://vercel.com) → sign in with GitHub → **Add New → Project** → import your `wishly` repo.
 3. Before clicking Deploy, open **Environment Variables** and add:
-   - `SUPABASE_URL` = your Project URL
-   - `SUPABASE_SERVICE_ROLE_KEY` = your service_role key
+   - `DATABASE_URL` = the same connection string as in your `.env.local`
 4. Click **Deploy**. Done — you get a live link like `wishly-yourname.vercel.app`. Later you can attach a custom domain (₹500–800/year) in Vercel settings.
 
 Every time you push new code to GitHub, Vercel redeploys automatically.
