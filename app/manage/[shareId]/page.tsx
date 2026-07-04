@@ -6,6 +6,11 @@ import { ShareBox } from "@/components/ShareBox";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: `Your list · ${SITE_NAME}`,
+  robots: { index: false, follow: false },
+};
+
 export default async function ManagePage({
   params,
   searchParams,

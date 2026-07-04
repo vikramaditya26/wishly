@@ -7,6 +7,27 @@ import type { Occasion } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ shareId: string }>;
+}) {
+  const { shareId } = await params;
+  const basket = await getStore().getBasket(shareId).catch(() => null);
+  const title = basket
+    ? `${headline(basket.occasion, basket.hostName)} · ${SITE_NAME}`
+    : `Gift list · ${SITE_NAME}`;
+  const description = basket?.message
+    ? basket.message.slice(0, 160)
+    : "Pick a gift and reserve it quietly, so nothing gets bought twice.";
+  return {
+    title,
+    description,
+    robots: { index: false, follow: false },
+    openGraph: { title, description },
+  };
+}
+
 function headline(occasion: Occasion, name: string): string {
   switch (occasion) {
     case "birthday": return `${name}'s Birthday`;

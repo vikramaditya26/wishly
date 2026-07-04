@@ -175,3 +175,13 @@ owner-facing step-by-step.
   affiliate-disclosure line removed at owner's request (see Conventions note).
   Verified end-to-end in preview (create → share → reserve → undo-token →
   manage) in demo mode.
+- **2026-07-04** — Pushed to GitHub (vikramaditya26/wishly). SEO + share
+  previews added: full metadata/OpenGraph in `app/layout.tsx` (metadataBase
+  from `NEXT_PUBLIC_SITE_URL`/`VERCEL_URL`), `app/robots.ts` (home indexable;
+  `/b/` and `/manage/` disallowed + noindex — lists are private-by-link),
+  `app/opengraph-image.tsx` and `app/b/[shareId]/opengraph-image.tsx`
+  (dynamic per-list WhatsApp/social preview cards via next/og), and
+  `generateMetadata` on the guest page (title = "Priya's Wedding · Wishly").
+  Owner's Supabase project exists (qilzahxlaxumzpiolhji, URL prefilled in
+  `.env.local`); still pending: run `supabase/schema.sql` in its SQL editor
+  and set SUPABASE_SERVICE_ROLE_KEY locally + on Vercel.
