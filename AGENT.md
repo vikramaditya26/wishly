@@ -203,3 +203,17 @@ README for the owner-facing step-by-step.
   user's home folder confused Next's root detection). Vercel needs ONE env
   var now: `DATABASE_URL`. Note: `next dev` (incl. preview tooling) and
   `next build` must not run at the same time — they corrupt `.next`.
+- **2026-07-06** — Paste-a-link product import: new `POST /api/product-preview`
+  fetches any product URL server-side and extracts name/photo/price
+  (Amazon-specific selectors: `#productTitle`, `landingImage`/`hiRes`,
+  `.a-price .a-offscreen`; OpenGraph fallback for Flipkart/Myntra/etc; SSRF
+  guard blocks localhost/IP-literal hosts). The "Add your own" modal now
+  leads with the link field and auto-fills the rest (debounced fetch + photo
+  preview). Verified with a live amazon.in product from a residential IP —
+  CAVEAT: Amazon may bot-block fetches from Vercel datacenter IPs; the modal
+  falls back to manual fields, and Amazon PA-API is the proper fix once the
+  affiliate account qualifies. Guest-list OG card now renders up to 3 actual
+  product photos (next/og fetches remote images). Diagnosed owner's "shared
+  link shows nothing": the live DB had zero rows — their share test never ran
+  against a deployment with `DATABASE_URL` set (localhost link or missing
+  Vercel env var).

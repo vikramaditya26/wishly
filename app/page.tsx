@@ -3,7 +3,7 @@
 // Wishly is a single-page experience: short intro, then the list builder
 // directly below. Details + share links swap in as steps on the same page.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CATEGORIES, FOR_WHO, OCCASIONS, PRODUCTS, THEMES, formatINR } from "@/lib/catalog";
 import { SITE_NAME, amazonSearchLink } from "@/lib/config";
 import type { BasketItem, ForWho, Occasion } from "@/lib/types";
@@ -23,6 +23,40 @@ export default function Home() {
   const [picked, setPicked] = useState<Record<string, DraftItem>>({});
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [custom, setCustom] = useState({ name: "", url: "", imageUrl: "", price: "" });
+  const [fetchingLink, setFetchingLink] = useState(false);
+  const [fetchNote, setFetchNote] = useState("");
+
+  // when a product link is pasted, read its name / photo / price automatically
+  useEffect(() => {
+    const url = custom.url.trim();
+    if (!/^https?:\/\/\S+\.\S+/.test(url)) return;
+    const timer = setTimeout(async () => {
+      setFetchingLink(true);
+      setFetchNote("");
+      try {
+        const res = await fetch("/api/product-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        setCustom((prev) => ({
+          ...prev,
+          name: prev.name.trim() ? prev.name : data.name ?? "",
+          imageUrl: prev.imageUrl.trim() ? prev.imageUrl : data.imageUrl ?? "",
+          price: prev.price.trim() ? prev.price : data.price ?? "",
+        }));
+        setFetchNote(data.name || data.imageUrl ? "Details filled from the link." : "");
+      } catch (e) {
+        setFetchNote(e instanceof Error ? e.message : "Couldn't read that page - fill the details manually.");
+      } finally {
+        setFetchingLink(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [custom.url]);
 
   // details
   const [hostName, setHostName] = useState("");
@@ -82,6 +116,7 @@ export default function Home() {
       },
     }));
     setCustom({ name: "", url: "", imageUrl: "", price: "" });
+    setFetchNote("");
     setShowCustomForm(false);
   }
 
@@ -345,26 +380,39 @@ export default function Home() {
           <div className="bg-[var(--surface)] rounded-2xl p-6 w-full max-w-md animate-rise">
             <h3 className="font-display text-2xl">Add your own gift</h3>
             <p className="text-sm text-[var(--muted)] mt-1">
-              From Amazon, Flipkart, Myntra — anywhere. Only the name is required.
+              Paste a link from Amazon, Flipkart, Myntra — the name, photo and price fill in
+              automatically.
             </p>
             <div className="mt-5 space-y-3">
+              <input
+                value={custom.url}
+                onChange={(e) => setCustom({ ...custom, url: e.target.value })}
+                placeholder="Paste product link"
+                className="input"
+              />
+              {(fetchingLink || fetchNote) && (
+                <p className="text-xs text-[var(--muted)] px-1">
+                  {fetchingLink ? "Reading the link…" : fetchNote}
+                </p>
+              )}
+              {custom.imageUrl && (
+                <div className="flex items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--tile)] p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={custom.imageUrl}
+                    alt=""
+                    className="h-14 w-14 object-contain mix-blend-multiply"
+                  />
+                  <p className="text-xs text-[var(--muted)] leading-snug line-clamp-3">
+                    {custom.name || "Photo found"}
+                  </p>
+                </div>
+              )}
               <input
                 value={custom.name}
                 onChange={(e) => setCustom({ ...custom, name: e.target.value })}
                 placeholder="Gift name"
                 maxLength={120}
-                className="input"
-              />
-              <input
-                value={custom.url}
-                onChange={(e) => setCustom({ ...custom, url: e.target.value })}
-                placeholder="Product link (optional)"
-                className="input"
-              />
-              <input
-                value={custom.imageUrl}
-                onChange={(e) => setCustom({ ...custom, imageUrl: e.target.value })}
-                placeholder="Image link (optional)"
                 className="input"
               />
               <input
@@ -377,7 +425,10 @@ export default function Home() {
             </div>
             <div className="mt-5 flex gap-3">
               <button
-                onClick={() => setShowCustomForm(false)}
+                onClick={() => {
+                  setShowCustomForm(false);
+                  setFetchNote("");
+                }}
                 className="flex-1 py-2.5 rounded-full border border-[var(--line)] text-sm font-medium text-[var(--muted)]"
               >
                 Cancel
