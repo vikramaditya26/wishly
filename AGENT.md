@@ -217,3 +217,9 @@ README for the owner-facing step-by-step.
   link shows nothing": the live DB had zero rows — their share test never ran
   against a deployment with `DATABASE_URL` set (localhost link or missing
   Vercel env var).
+- **2026-07-06 (later)** — Fixed Vercel "No Output Directory named public"
+  build failure. Vercel was auto-detecting the project as a static site
+  (Framework Preset "Other") instead of Next.js, so it looked for `public/`
+  instead of `.next`. Added `vercel.json` with `"framework": "nextjs"` to
+  force correct detection regardless of the dashboard preset. Owner still
+  MUST set `DATABASE_URL` in Vercel env vars for real (non-demo) mode.
