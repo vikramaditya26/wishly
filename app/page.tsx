@@ -2,31 +2,54 @@
 
 // Wishly is a single-page experience: short intro, then the list builder
 // directly below. Details + share links swap in as steps on the same page.
+// No prices anywhere - a gift list is about the gifts, not the money.
 
 import { useEffect, useMemo, useState } from "react";
-import { CATEGORIES, FOR_WHO, OCCASIONS, PRODUCTS, THEMES, formatINR } from "@/lib/catalog";
+import { CATEGORIES, FOR_WHO, OCCASIONS, PRODUCTS, THEMES } from "@/lib/catalog";
 import { SITE_NAME, amazonSearchLink } from "@/lib/config";
 import type { BasketItem, ForWho, Occasion } from "@/lib/types";
 
 type Step = "build" | "details" | "done";
 type DraftItem = Omit<BasketItem, "claimedBy">;
 
+const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label]));
+
+function linkDomain(url?: string): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 export default function Home() {
   const [step, setStep] = useState<Step>("build");
 
   // filters
-  const [occasion, setOccasion] = useState<Occasion>("birthday");
   const [forWho, setForWho] = useState<ForWho | null>(null);
   const [category, setCategory] = useState<string>("all");
 
   // basket
   const [picked, setPicked] = useState<Record<string, DraftItem>>({});
   const [showCustomForm, setShowCustomForm] = useState(false);
-  const [custom, setCustom] = useState({ name: "", url: "", imageUrl: "", price: "" });
+  const [custom, setCustom] = useState({ name: "", url: "", imageUrl: "" });
   const [fetchingLink, setFetchingLink] = useState(false);
   const [fetchNote, setFetchNote] = useState("");
 
-  // when a product link is pasted, read its name / photo / price automatically
+  // details
+  const [occasion, setOccasion] = useState<Occasion>("birthday");
+  const [hostName, setHostName] = useState("");
+  const [eventDate, setEventDate] = useState("");
+  const [message, setMessage] = useState("");
+  const [theme, setTheme] = useState(THEMES[0].id);
+
+  // result
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<{ shareId: string; manageKey: string } | null>(null);
+
+  // when a product link is pasted, read its name / photo automatically
   useEffect(() => {
     const url = custom.url.trim();
     if (!/^https?:\/\/\S+\.\S+/.test(url)) return;
@@ -45,7 +68,6 @@ export default function Home() {
           ...prev,
           name: prev.name.trim() ? prev.name : data.name ?? "",
           imageUrl: prev.imageUrl.trim() ? prev.imageUrl : data.imageUrl ?? "",
-          price: prev.price.trim() ? prev.price : data.price ?? "",
         }));
         setFetchNote(data.name || data.imageUrl ? "Details filled from the link." : "");
       } catch (e) {
@@ -58,28 +80,20 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [custom.url]);
 
-  // details
-  const [hostName, setHostName] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [message, setMessage] = useState("");
-  const [theme, setTheme] = useState(THEMES[0].id);
-
-  // result
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [result, setResult] = useState<{ shareId: string; manageKey: string } | null>(null);
-
   const visible = useMemo(
     () =>
       PRODUCTS.filter(
         (p) =>
-          p.occasions.includes(occasion) &&
           (!forWho || p.forWho === forWho || p.forWho === "anyone") &&
           (category === "all" || p.category === category)
       ),
-    [occasion, forWho, category]
+    [forWho, category]
   );
 
+  const customItems = useMemo(
+    () => Object.values(picked).filter((it) => it.id.startsWith("custom-")),
+    [picked]
+  );
   const count = Object.keys(picked).length;
 
   function toggleProduct(id: string) {
@@ -93,10 +107,17 @@ export default function Home() {
           id: p.id,
           name: p.name,
           imageUrl: p.image,
-          price: formatINR(p.price),
           url: amazonSearchLink(p.amazonQuery),
         };
       }
+      return next;
+    });
+  }
+
+  function removeItem(id: string) {
+    setPicked((prev) => {
+      const next = { ...prev };
+      delete next[id];
       return next;
     });
   }
@@ -112,10 +133,9 @@ export default function Home() {
         name,
         url: custom.url.trim() || undefined,
         imageUrl: custom.imageUrl.trim() || undefined,
-        price: custom.price.trim() || undefined,
       },
     }));
-    setCustom({ name: "", url: "", imageUrl: "", price: "" });
+    setCustom({ name: "", url: "", imageUrl: "" });
     setFetchNote("");
     setShowCustomForm(false);
   }
@@ -158,7 +178,9 @@ export default function Home() {
       <main className="min-h-screen px-6 py-20">
         <div className="max-w-lg mx-auto animate-rise">
           <p className="font-display text-2xl">{SITE_NAME}</p>
-          <h1 className="font-display text-4xl mt-10">Your list is live.</h1>
+          <h1 className="font-display text-4xl mt-10">
+            Your list is live<span className="text-[var(--accent)]">.</span>
+          </h1>
           <p className="mt-3 text-[15px] text-[var(--muted)]">
             Send this link to friends and family. They&apos;ll reserve gifts quietly — you just wait.
           </p>
@@ -192,6 +214,7 @@ export default function Home() {
 
   // --------------------------------------------------------------- details
   if (step === "details") {
+    const pickedList = Object.values(picked);
     return (
       <main className="min-h-screen px-6 py-16">
         <div className="max-w-lg mx-auto animate-rise">
@@ -199,11 +222,42 @@ export default function Home() {
             onClick={() => setStep("build")}
             className="text-sm text-[var(--muted)] hover:text-[var(--ink)]"
           >
-            ← Back
+            ← Back to gifts
           </button>
-          <h1 className="font-display text-4xl mt-6">Almost done.</h1>
+          <h1 className="font-display text-4xl mt-6">
+            Almost there<span className="text-[var(--accent)]">.</span>
+          </h1>
 
-          <div className="mt-8 space-y-6">
+          {/* your picks, with photos */}
+          <div className="mt-6 flex gap-2 overflow-x-auto pb-1">
+            {pickedList.map((it) => (
+              <div
+                key={it.id}
+                className="shrink-0 h-16 w-16 rounded-xl bg-[var(--tile)] border border-[var(--line)] flex items-center justify-center overflow-hidden"
+                title={it.name}
+              >
+                {it.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={it.imageUrl} alt={it.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+                ) : (
+                  <span className="font-display text-xl text-[var(--muted)]">
+                    {it.name.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-7 space-y-6">
+            <Field label="The occasion">
+              <div className="flex flex-wrap gap-2 pt-1">
+                {OCCASIONS.map((o) => (
+                  <Chip key={o.id} active={occasion === o.id} onClick={() => setOccasion(o.id)}>
+                    {o.label}
+                  </Chip>
+                ))}
+              </div>
+            </Field>
             <Field label="Your name">
               <input
                 value={hostName}
@@ -241,7 +295,7 @@ export default function Home() {
                     aria-label={t.label}
                     className={`h-9 w-9 rounded-full border transition ${
                       theme === t.id
-                        ? "border-[var(--ink)] ring-2 ring-[var(--ink)] ring-offset-2 ring-offset-[var(--bg)]"
+                        ? "border-[var(--accent)] ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]"
                         : "border-[var(--line)]"
                     }`}
                     style={{ background: t.tile }}
@@ -251,12 +305,12 @@ export default function Home() {
             </Field>
           </div>
 
-          {error && <p className="mt-5 text-sm text-[var(--accent)]">{error}</p>}
+          {error && <p className="mt-5 text-sm text-[var(--accent-deep)]">{error}</p>}
 
           <button
             onClick={createBasket}
             disabled={busy || !hostName.trim()}
-            className="mt-9 w-full py-3.5 rounded-full bg-[var(--ink)] text-white text-[15px] font-medium hover:opacity-90 transition disabled:opacity-30"
+            className="btn-primary mt-9 w-full py-3.5 text-[15px]"
           >
             {busy ? "Creating…" : "Create my list"}
           </button>
@@ -273,14 +327,14 @@ export default function Home() {
         <span className="text-xs uppercase tracking-widest text-[var(--muted)]">Free · No signup</span>
       </header>
 
-      {/* hero — short */}
+      {/* hero — short and warm */}
       <section className="max-w-5xl mx-auto px-6 pt-16 pb-12">
         <h1 className="font-display text-5xl sm:text-6xl leading-[1.08] max-w-2xl">
-          Three people brought you the same perfume.
+          Get gifts you&apos;ll <em className="text-[var(--accent)] not-italic font-display italic">actually</em> love.
         </h1>
         <p className="mt-5 text-lg text-[var(--muted)] max-w-xl">
-          Never again. Pick the gifts you&apos;d love, share one link — friends quietly reserve
-          them so nothing gets bought twice.
+          Build your wishlist in a minute and share one link. Friends quietly reserve gifts —
+          so nothing gets bought twice.
         </p>
       </section>
 
@@ -288,18 +342,11 @@ export default function Home() {
       <section className="max-w-5xl mx-auto px-6">
         <div className="border-t border-[var(--line)] pt-8">
           <div className="flex flex-wrap items-center gap-2">
-            {OCCASIONS.map((o) => (
-              <Chip key={o.id} active={occasion === o.id} onClick={() => setOccasion(o.id)}>
-                {o.label}
-              </Chip>
-            ))}
-            <span className="mx-2 h-4 w-px bg-[var(--line)] hidden sm:block" />
+            <Chip active={forWho === null} onClick={() => setForWho(null)}>
+              Everything
+            </Chip>
             {FOR_WHO.map((f) => (
-              <Chip
-                key={f.id}
-                active={forWho === f.id}
-                onClick={() => setForWho(forWho === f.id ? null : f.id)}
-              >
+              <Chip key={f.id} active={forWho === f.id} onClick={() => setForWho(f.id)}>
                 {f.label}
               </Chip>
             ))}
@@ -321,19 +368,60 @@ export default function Home() {
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           <button
             onClick={() => setShowCustomForm(true)}
-            className="rounded-2xl border border-dashed border-[var(--muted)]/50 min-h-56 flex flex-col items-center justify-center gap-1.5 text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--ink)]/40 transition p-4"
+            className="rounded-2xl border border-dashed border-[var(--accent)]/40 bg-[var(--accent-soft)]/40 min-h-56 flex flex-col items-center justify-center gap-1.5 text-[var(--accent-deep)] hover:bg-[var(--accent-soft)] transition p-4"
           >
             <span className="text-2xl leading-none">+</span>
             <span className="text-sm font-medium">Add your own</span>
-            <span className="text-xs">paste any product link</span>
+            <span className="text-xs opacity-80">paste any product link</span>
           </button>
+
+          {/* items you added yourself, shown with their photo */}
+          {customItems.map((it) => {
+            const domain = linkDomain(it.url);
+            return (
+              <div
+                key={it.id}
+                className="rounded-2xl bg-[var(--surface)] border-2 border-[var(--accent)]/50 overflow-hidden"
+              >
+                <div className="aspect-square bg-[var(--tile)] p-5 flex items-center justify-center">
+                  {it.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={it.imageUrl}
+                      alt={it.name}
+                      loading="lazy"
+                      className="max-h-full max-w-full object-contain mix-blend-multiply"
+                    />
+                  ) : (
+                    <span className="font-display text-4xl text-[var(--muted)]">
+                      {it.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="p-3">
+                  <p className="text-sm font-medium leading-snug line-clamp-2">{it.name}</p>
+                  <p className="text-xs text-[var(--muted)] mt-0.5">
+                    {domain ? `from ${domain}` : "added by you"}
+                  </p>
+                  <button
+                    onClick={() => removeItem(it.id)}
+                    className="mt-2.5 w-full py-1.5 rounded-full text-sm font-medium bg-[var(--ink)] text-white"
+                  >
+                    Added ✓ tap to remove
+                  </button>
+                </div>
+              </div>
+            );
+          })}
 
           {visible.map((p) => {
             const added = !!picked[p.id];
             return (
               <div
                 key={p.id}
-                className="rounded-2xl bg-[var(--surface)] border border-[var(--line)] overflow-hidden"
+                className={`rounded-2xl bg-[var(--surface)] border overflow-hidden transition ${
+                  added ? "border-2 border-[var(--accent)]/50" : "border-[var(--line)]"
+                }`}
               >
                 <div className="aspect-square bg-[var(--tile)] p-5 flex items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -346,16 +434,16 @@ export default function Home() {
                 </div>
                 <div className="p-3">
                   <p className="text-sm font-medium leading-snug line-clamp-2">{p.name}</p>
-                  <p className="text-sm text-[var(--muted)] mt-0.5">{formatINR(p.price)}</p>
+                  <p className="text-xs text-[var(--muted)] mt-0.5">{CATEGORY_LABEL[p.category]}</p>
                   <button
                     onClick={() => toggleProduct(p.id)}
                     className={`mt-2.5 w-full py-1.5 rounded-full text-sm font-medium border transition ${
                       added
                         ? "bg-[var(--ink)] text-white border-[var(--ink)]"
-                        : "border-[var(--ink)]/25 hover:border-[var(--ink)]"
+                        : "border-[var(--accent)]/40 text-[var(--accent-deep)] hover:bg-[var(--accent-soft)]/60"
                     }`}
                   >
-                    {added ? "Added" : "Add"}
+                    {added ? "Added ✓" : "Add"}
                   </button>
                 </div>
               </div>
@@ -363,9 +451,9 @@ export default function Home() {
           })}
         </div>
 
-        {visible.length === 0 && (
+        {visible.length === 0 && customItems.length === 0 && (
           <p className="text-center text-[var(--muted)] mt-16 text-sm">
-            Nothing here for this combination — try another category.
+            Nothing here — try another category.
           </p>
         )}
       </section>
@@ -380,8 +468,7 @@ export default function Home() {
           <div className="bg-[var(--surface)] rounded-2xl p-6 w-full max-w-md animate-rise">
             <h3 className="font-display text-2xl">Add your own gift</h3>
             <p className="text-sm text-[var(--muted)] mt-1">
-              Paste a link from Amazon, Flipkart, Myntra — the name, photo and price fill in
-              automatically.
+              Paste a link from Amazon, Flipkart, Myntra — the name and photo fill in automatically.
             </p>
             <div className="mt-5 space-y-3">
               <input
@@ -415,13 +502,6 @@ export default function Home() {
                 maxLength={120}
                 className="input"
               />
-              <input
-                value={custom.price}
-                onChange={(e) => setCustom({ ...custom, price: e.target.value })}
-                placeholder="Approx price (optional)"
-                maxLength={40}
-                className="input"
-              />
             </div>
             <div className="mt-5 flex gap-3">
               <button
@@ -436,7 +516,7 @@ export default function Home() {
               <button
                 onClick={addCustom}
                 disabled={!custom.name.trim()}
-                className="flex-1 py-2.5 rounded-full bg-[var(--ink)] text-white text-sm font-medium disabled:opacity-30"
+                className="btn-primary flex-1 py-2.5 text-sm"
               >
                 Add
               </button>
@@ -451,7 +531,7 @@ export default function Home() {
           <div className="max-w-5xl mx-auto flex justify-center">
             <button
               onClick={() => setStep("details")}
-              className="px-10 py-3.5 rounded-full bg-[var(--ink)] text-white text-[15px] font-medium shadow-xl shadow-black/15 hover:opacity-90 transition"
+              className="btn-primary px-10 py-3.5 text-[15px] shadow-xl shadow-black/15"
             >
               Continue — {count} gift{count > 1 ? "s" : ""}
             </button>
@@ -501,7 +581,7 @@ function Tab({
       onClick={onClick}
       className={`whitespace-nowrap px-1 pb-1.5 text-sm border-b-2 transition ${
         active
-          ? "border-[var(--ink)] text-[var(--ink)] font-medium"
+          ? "border-[var(--accent)] text-[var(--ink)] font-medium"
           : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
       }`}
     >
@@ -548,7 +628,7 @@ function CopyRow({ path }: { path: string }) {
             setTimeout(() => setCopied(false), 1500);
           });
         }}
-        className="px-5 py-2.5 rounded-xl text-sm font-medium bg-[var(--ink)] text-white hover:opacity-90 transition"
+        className="btn-primary px-5 py-2.5 text-sm"
       >
         {copied ? "Copied" : "Copy"}
       </button>
@@ -566,7 +646,7 @@ function WhatsAppButton({ path }: { path: string }) {
       href={`https://wa.me/?text=${text}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="mt-3 block text-center w-full py-2.5 rounded-xl border border-[var(--line)] text-sm font-medium hover:border-[var(--ink)] transition"
+      className="mt-3 block text-center w-full py-2.5 rounded-xl border border-[var(--line)] text-sm font-medium hover:border-[var(--accent)] hover:text-[var(--accent-deep)] transition"
     >
       Share on WhatsApp
     </a>

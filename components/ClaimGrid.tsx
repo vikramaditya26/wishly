@@ -36,6 +36,7 @@ export function ClaimGrid({
   const [items, setItems] = useState(initialItems);
   const [claiming, setClaiming] = useState<BasketItem | null>(null);
   const [guestName, setGuestName] = useState("");
+  const [nameLocked, setNameLocked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [myTokens, setMyTokens] = useState<Record<string, string>>({});
@@ -43,8 +44,13 @@ export function ClaimGrid({
   useEffect(() => {
     setMyTokens(loadTokens());
     try {
+      // once you've reserved under a name in this browser, it sticks -
+      // keeps one person from reserving under five different names by accident
       const saved = localStorage.getItem("wishly-guest-name");
-      if (saved) setGuestName(saved);
+      if (saved) {
+        setGuestName(saved);
+        setNameLocked(true);
+      }
     } catch {}
   }, []);
 
@@ -75,6 +81,7 @@ export function ClaimGrid({
       try {
         localStorage.setItem("wishly-guest-name", guestName.trim());
       } catch {}
+      setNameLocked(true);
       setClaiming(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
@@ -131,7 +138,6 @@ export function ClaimGrid({
               </div>
               <div className="p-3">
                 <p className="text-sm font-medium leading-snug line-clamp-2">{item.name}</p>
-                {item.price && <p className="text-sm text-[var(--muted)] mt-0.5">{item.price}</p>}
 
                 {claimed ? (
                   mine ? (
@@ -142,9 +148,9 @@ export function ClaimGrid({
                           href={withAffiliateTag(item.url)}
                           target="_blank"
                           rel="noopener noreferrer nofollow"
-                          className="block text-center text-sm font-medium py-1.5 rounded-full bg-[var(--ink)] text-white hover:opacity-90 transition"
+                          className="btn-primary block text-center text-sm py-1.5"
                         >
-                          Buy on Amazon
+                          See the gift
                         </a>
                       )}
                       <button
@@ -165,9 +171,9 @@ export function ClaimGrid({
                       setError("");
                       setClaiming(item);
                     }}
-                    className="mt-2.5 w-full py-1.5 rounded-full text-sm font-medium border border-[var(--ink)]/25 hover:border-[var(--ink)] transition"
+                    className="mt-2.5 w-full py-1.5 rounded-full text-sm font-medium border border-[var(--accent)]/40 text-[var(--accent-deep)] hover:bg-[var(--accent-soft)]/60 transition"
                   >
-                    Reserve
+                    I&apos;ll gift this
                   </button>
                 )}
               </div>
@@ -185,15 +191,27 @@ export function ClaimGrid({
             <p className="text-sm text-[var(--muted)] mt-3">
               Just your name, so no one else brings the same thing.
             </p>
-            <input
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              placeholder="Your name"
-              maxLength={60}
-              autoFocus
-              className="input mt-4"
-            />
-            {error && <p className="mt-2 text-sm text-[var(--accent)]">{error}</p>}
+            {nameLocked ? (
+              <p className="mt-4 text-sm">
+                Reserving as <span className="font-medium">{guestName}</span>{" "}
+                <button
+                  onClick={() => setNameLocked(false)}
+                  className="text-[var(--muted)] underline underline-offset-2"
+                >
+                  not you?
+                </button>
+              </p>
+            ) : (
+              <input
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="Your name"
+                maxLength={60}
+                autoFocus
+                className="input mt-4"
+              />
+            )}
+            {error && <p className="mt-2 text-sm text-[var(--accent-deep)]">{error}</p>}
             <div className="mt-5 flex gap-3">
               <button
                 onClick={() => setClaiming(null)}
@@ -204,7 +222,7 @@ export function ClaimGrid({
               <button
                 onClick={claim}
                 disabled={busy || !guestName.trim()}
-                className="flex-1 py-2.5 rounded-full bg-[var(--ink)] text-white text-sm font-medium disabled:opacity-30"
+                className="btn-primary flex-1 py-2.5 text-sm"
               >
                 {busy ? "…" : "Reserve"}
               </button>

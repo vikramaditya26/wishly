@@ -37,6 +37,8 @@ interface Store {
   verifyManageKey(shareId: string, key: string): Promise<boolean>;
   claimItem(shareId: string, itemId: string, guestName: string): Promise<ClaimResult>;
   unclaimItem(shareId: string, itemId: string, claimToken: string): Promise<boolean>;
+  /** Creator override from the manage page: clear a reservation without a token. */
+  releaseItem(shareId: string, itemId: string): Promise<boolean>;
 }
 
 // ------------------------------ in-memory ---------------------------------
@@ -91,6 +93,14 @@ const memoryStore: Store = {
     const b = mem.get(shareId);
     const item = b?.items.find((i) => i.id === itemId);
     if (!b || !item || b.claimTokens[itemId] !== claimToken) return false;
+    item.claimedBy = null;
+    delete b.claimTokens[itemId];
+    return true;
+  },
+  async releaseItem(shareId, itemId) {
+    const b = mem.get(shareId);
+    const item = b?.items.find((i) => i.id === itemId);
+    if (!b || !item || !item.claimedBy) return false;
     item.claimedBy = null;
     delete b.claimTokens[itemId];
     return true;
@@ -230,6 +240,17 @@ const postgresStore: Store = {
       update basket_items
       set claimed_by = null, claim_token = null, claimed_at = null
       where id = ${itemId} and basket_id = ${basket.id} and claim_token = ${claimToken}
+      returning id`;
+    return updated.length > 0;
+  },
+  async releaseItem(shareId, itemId) {
+    const sql = db();
+    const [basket] = await sql`select id from baskets where share_id = ${shareId}`;
+    if (!basket) return false;
+    const updated = await sql`
+      update basket_items
+      set claimed_by = null, claim_token = null, claimed_at = null
+      where id = ${itemId} and basket_id = ${basket.id} and claimed_by is not null
       returning id`;
     return updated.length > 0;
   },

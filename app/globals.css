@@ -1,27 +1,43 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   Wishly design tokens — editorial, warm, quiet.
+   Wishly design tokens — editorial and warm, never sterile.
    Fonts: Playfair Display (display) + DM Sans (body), wired via next/font.
    NOTE: the font CSS variables are set on <body> by next/font, so reference
    them directly here — do NOT chain them through @theme at :root.
 --------------------------------------------------------------------------- */
 
 :root {
-  --bg: #faf7f1;      /* warm paper */
-  --surface: #ffffff;
-  --tile: #f4efe6;    /* product image tile */
-  --ink: #1c1a17;
-  --muted: #96907f;
-  --line: #e9e2d4;
-  --accent: #9d4433;  /* terracotta */
+  --bg: #f7f1e6;      /* warm paper */
+  --surface: #fffdf8;
+  --tile: #f1e9da;    /* product image tile */
+  --ink: #241f19;
+  --muted: #97896f;
+  --line: #e6dcc8;
+  --accent: #b0572f;       /* terracotta — primary buttons */
+  --accent-deep: #94441f;
+  --accent-soft: #f3e2d3;  /* tinted fills */
 }
 
 body {
   font-family: var(--font-dm), ui-sans-serif, system-ui, sans-serif;
-  background: var(--bg);
+  background:
+    radial-gradient(1100px 500px at 85% -80px, rgba(176, 87, 47, 0.09), transparent 65%),
+    radial-gradient(900px 420px at -120px 240px, rgba(151, 137, 111, 0.10), transparent 60%),
+    var(--bg);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+}
+
+/* faint paper grain over everything, so the page never feels flat-white */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
 }
 
 .font-display {
@@ -39,7 +55,26 @@ body {
   outline: none;
 }
 .input:focus {
-  border-color: var(--ink);
+  border-color: var(--accent);
+}
+
+/* primary (terracotta) button */
+.btn-primary {
+  background: var(--accent);
+  color: #fff8f2;
+  border-radius: 9999px;
+  font-weight: 500;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.btn-primary:hover {
+  background: var(--accent-deep);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+.btn-primary:disabled {
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 /* quiet fade-up for content blocks */

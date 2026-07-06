@@ -223,3 +223,21 @@ README for the owner-facing step-by-step.
   instead of `.next`. Added `vercel.json` with `"framework": "nextjs"` to
   force correct detection regardless of the dashboard preset. Owner still
   MUST set `DATABASE_URL` in Vercel env vars for real (non-demo) mode.
+- **2026-07-07 (v3 polish)** — Owner feedback round: (1) NO prices anywhere —
+  cards show a category/brand line instead ("money parts" felt tacky on a
+  gift list); price inputs/display removed, DB column kept but unused.
+  (2) New hero ("Get gifts you'll actually love.") replacing the
+  "three perfumes" line. (3) Warmer look: deeper cream bg with soft radial
+  tints + SVG grain overlay, terracotta `.btn-primary` for all primary
+  actions. (4) Filtering simplified: occasion moved to the details step (it
+  describes the event, not the products); browsing is now just
+  Everything/Her/Him + category tabs so products never vanish confusingly.
+  (5) Custom items now render as cards in the grid (photo + "from amazon.in"
+  + remove), and the details step shows a thumbnail strip of picks.
+  (6) Manage page: item thumbnails + creator "undo" per reservation via new
+  `POST /api/baskets/[shareId]/release` (manage-key-gated) and
+  `releaseItem()` in both stores. (7) Guest name is remembered and locked
+  after the first reservation in that browser ("Reserving as X — not you?")
+  to reduce the multiple-names loophole; decided AGAINST Google sign-in for
+  guests (breaks the no-login principle; creator undo + name lock is enough
+  for MVP). Full flow re-verified locally against the live DB.

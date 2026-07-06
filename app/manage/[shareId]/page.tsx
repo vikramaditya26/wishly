@@ -3,6 +3,7 @@ import { getStore } from "@/lib/store";
 import { OCCASIONS } from "@/lib/catalog";
 import { SITE_NAME } from "@/lib/config";
 import { ShareBox } from "@/components/ShareBox";
+import { ManageList } from "@/components/ManageList";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,6 @@ export default async function ManagePage({
   }
 
   const occ = OCCASIONS.find((o) => o.id === basket.occasion);
-  const claimed = basket.items.filter((i) => i.claimedBy);
 
   return (
     <main className="min-h-screen px-6 py-14">
@@ -53,30 +53,14 @@ export default async function ManagePage({
         <h1 className="font-display text-4xl mt-10">
           Your {occ ? occ.label.toLowerCase() : ""} list
         </h1>
-        <p className="text-[var(--muted)] text-sm mt-2">
-          {claimed.length} of {basket.items.length} gifts reserved. Refresh anytime for updates.
-        </p>
+
+        <ManageList shareId={basket.shareId} manageKey={key!} initialItems={basket.items} />
 
         <ShareBox shareId={basket.shareId} />
 
-        <div className="mt-8 divide-y divide-[var(--line)] border-y border-[var(--line)]">
-          {basket.items.map((item) => (
-            <div key={item.id} className="py-3.5 flex items-center gap-4">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{item.name}</p>
-                {item.price && <p className="text-xs text-[var(--muted)] mt-0.5">{item.price}</p>}
-              </div>
-              {item.claimedBy ? (
-                <span className="text-sm font-medium whitespace-nowrap">{item.claimedBy}</span>
-              ) : (
-                <span className="text-sm text-[var(--muted)] whitespace-nowrap">—</span>
-              )}
-            </div>
-          ))}
-        </div>
-
         <p className="mt-8 text-xs text-[var(--muted)]">
-          Bookmark this page — it&apos;s your private dashboard.
+          Bookmark this page — it&apos;s your private dashboard. If someone reserved by mistake,
+          use &quot;undo&quot; to free the gift up again.
         </p>
       </div>
     </main>
