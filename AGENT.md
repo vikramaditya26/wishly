@@ -241,3 +241,13 @@ README for the owner-facing step-by-step.
   to reduce the multiple-names loophole; decided AGAINST Google sign-in for
   guests (breaks the no-login principle; creator undo + name lock is enough
   for MVP). Full flow re-verified locally against the live DB.
+- **2026-07-07 (growth features)** — (1) `/my` page: lists every basket
+  created in this browser (from `localStorage["wishly-my-baskets"]`) with
+  "Open dashboard" + "Copy share link"; linked from the home header and the
+  success screen. Device-local by design. (2) Post-reserve WhatsApp nudge:
+  after reserving, a modal offers a prewritten "I've reserved X on
+  <host>'s list — pick yours here" message (viral loop back into the same
+  group). (3) `lib/confetti.ts`: dependency-free canvas confetti burst in
+  brand colours on successful reservation; skips when
+  prefers-reduced-motion; self-removes after ~1.5s. ClaimGrid now takes a
+  `hostName` prop for the nudge message.

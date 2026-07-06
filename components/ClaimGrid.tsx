@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { withAffiliateTag } from "@/lib/config";
+import { burstConfetti } from "@/lib/confetti";
 import type { BasketItem } from "@/lib/types";
 
 const TOKENS_KEY = "wishly-claim-tokens";
@@ -28,13 +29,16 @@ export function ClaimGrid({
   shareId,
   initialItems,
   tileColor,
+  hostName,
 }: {
   shareId: string;
   initialItems: BasketItem[];
   tileColor: string;
+  hostName: string;
 }) {
   const [items, setItems] = useState(initialItems);
   const [claiming, setClaiming] = useState<BasketItem | null>(null);
+  const [justClaimed, setJustClaimed] = useState<BasketItem | null>(null);
   const [guestName, setGuestName] = useState("");
   const [nameLocked, setNameLocked] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -82,7 +86,9 @@ export function ClaimGrid({
         localStorage.setItem("wishly-guest-name", guestName.trim());
       } catch {}
       setNameLocked(true);
+      setJustClaimed(claiming);
       setClaiming(null);
+      burstConfetti();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -181,6 +187,39 @@ export function ClaimGrid({
           );
         })}
       </div>
+
+      {/* reserved! nudge modal */}
+      {justClaimed && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm animate-rise text-center">
+            <h3 className="font-display text-2xl">
+              It&apos;s yours to gift<span className="text-[var(--accent)]">.</span>
+            </h3>
+            <p className="text-sm text-[var(--muted)] mt-2">
+              <span className="font-medium text-[var(--ink)]">{justClaimed.name}</span> is reserved
+              under your name. Want to let the group know it&apos;s taken?
+            </p>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(
+                `I've reserved "${justClaimed.name}" on ${hostName.split(" ")[0]}'s gift list — that one's mine to bring. Pick yours here: ${
+                  typeof window !== "undefined" ? `${window.location.origin}/b/${shareId}` : ""
+                }`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary block w-full py-2.5 text-sm mt-5"
+            >
+              Tell the group on WhatsApp
+            </a>
+            <button
+              onClick={() => setJustClaimed(null)}
+              className="mt-3 w-full py-2.5 rounded-full border border-[var(--line)] text-sm font-medium text-[var(--muted)]"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* reserve modal */}
       {claiming && (

@@ -196,7 +196,11 @@ export default function Home() {
               Private link — for you only
             </p>
             <p className="mt-1.5 text-sm text-[var(--muted)]">
-              This is where you see who reserved what. It&apos;s saved in this browser, but keep a copy somewhere safe.
+              This is where you see who reserved what. You&apos;ll always find it under{" "}
+              <a href="/my" className="underline underline-offset-2 hover:text-[var(--ink)]">
+                My lists
+              </a>{" "}
+              on this device — but keep a copy somewhere safe too.
             </p>
             <CopyRow path={`/manage/${result.shareId}?key=${result.manageKey}`} />
           </div>
@@ -324,7 +328,12 @@ export default function Home() {
     <main className="min-h-screen pb-32">
       <header className="max-w-5xl mx-auto px-6 pt-8 flex items-baseline justify-between">
         <span className="font-display text-2xl">{SITE_NAME}</span>
-        <span className="text-xs uppercase tracking-widest text-[var(--muted)]">Free · No signup</span>
+        <a
+          href="/my"
+          className="text-sm text-[var(--muted)] hover:text-[var(--accent-deep)] underline-offset-4 hover:underline"
+        >
+          My lists
+        </a>
       </header>
 
       {/* hero — short and warm */}
@@ -335,6 +344,9 @@ export default function Home() {
         <p className="mt-5 text-lg text-[var(--muted)] max-w-xl">
           Build your wishlist in a minute and share one link. Friends quietly reserve gifts —
           so nothing gets bought twice.
+        </p>
+        <p className="mt-4 text-xs uppercase tracking-widest text-[var(--muted)]">
+          Free · no app · no signup
         </p>
       </section>
 

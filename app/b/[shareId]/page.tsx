@@ -91,7 +91,12 @@ export default async function GuestPage({ params }: { params: Promise<{ shareId:
           nothing gets bought twice.
         </p>
 
-        <ClaimGrid shareId={basket.shareId} initialItems={basket.items} tileColor={theme.tile} />
+        <ClaimGrid
+          shareId={basket.shareId}
+          initialItems={basket.items}
+          tileColor={theme.tile}
+          hostName={basket.hostName}
+        />
 
         <footer className="mt-20 pt-6 border-t border-black/5 text-center text-xs text-[var(--muted)]">
           Made with{" "}
