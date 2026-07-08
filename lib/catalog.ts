@@ -6,7 +6,7 @@
 // go stale. To edit the catalog, edit this file - no database involved.
 // ---------------------------------------------------------------------------
 
-import type { CatalogProduct, ForWho, Occasion } from "./types";
+import type { CatalogProduct, ForWho, Occasion, Vibe } from "./types";
 
 export const OCCASIONS: { id: Occasion; label: string }[] = [
   { id: "birthday", label: "Birthday" },
@@ -19,6 +19,11 @@ export const OCCASIONS: { id: Occasion; label: string }[] = [
 export const FOR_WHO: { id: ForWho; label: string }[] = [
   { id: "her", label: "For her" },
   { id: "him", label: "For him" },
+];
+
+export const VIBES: { id: Vibe; label: string }[] = [
+  { id: "student", label: "Student" },
+  { id: "working", label: "Working" },
 ];
 
 export const CATEGORIES: { id: string; label: string }[] = [
@@ -43,6 +48,19 @@ export const THEMES: { id: string; label: string; bg: string; tile: string }[] =
 
 const CDN = "https://cdn.dummyjson.com/product-images";
 
+// Soft persona tags: helps "what should I pick?" filtering without hiding
+// too much. Everything not listed here matches both personas.
+const STUDENT_IDS = new Set([
+  "g5", "g32", "g35", "g36", "g41", "g42", "g43", "g44", "g45", "g46", "g49",
+  "g54", "g59", "g60", "g71", "g72", "g73", "g74", "g75", "g76", "g77", "g78",
+  "g79", "g80",
+]);
+const WORKING_IDS = new Set([
+  "g11", "g12", "g13", "g14", "g15", "g16", "g17", "g18", "g19", "g20", "g23",
+  "g24", "g25", "g47", "g48", "g50", "g52", "g53", "g55", "g61", "g62", "g63",
+  "g64", "g65", "g66", "g67", "g68", "g69", "g70",
+]);
+
 function p(
   id: string,
   name: string,
@@ -62,6 +80,7 @@ function p(
     amazonQuery: amazonQuery ?? name,
     occasions,
     forWho,
+    vibe: STUDENT_IDS.has(id) ? "student" : WORKING_IDS.has(id) ? "working" : "any",
   };
 }
 

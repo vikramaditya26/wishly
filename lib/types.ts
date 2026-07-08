@@ -9,15 +9,18 @@ export type Occasion =
 
 export type ForWho = "her" | "him" | "anyone";
 
+export type Vibe = "student" | "working" | "any";
+
 export interface CatalogProduct {
   id: string;
   name: string;
   image: string; // product photo URL
-  price: number; // INR, display-only
+  price: number; // INR, kept for data but never displayed
   category: string; // category id from CATEGORIES
   amazonQuery: string; // used to build an affiliate-tagged amazon.in search link
   occasions: Occasion[];
   forWho: ForWho;
+  vibe: Vibe;
 }
 
 export interface BasketItem {

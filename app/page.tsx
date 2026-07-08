@@ -1,18 +1,26 @@
 "use client";
 
-// Wishly is a single-page experience: short intro, then the list builder
-// directly below. Details + share links swap in as steps on the same page.
-// No prices anywhere - a gift list is about the gifts, not the money.
+// Wishly's single-page builder. Browsing is shelf-based (a "picked for you"
+// row plus one horizontal row per category) so a big catalog never becomes an
+// endless wall - tap a category name to see all of it as a grid.
 
-import { useEffect, useMemo, useState } from "react";
-import { CATEGORIES, FOR_WHO, OCCASIONS, PRODUCTS, THEMES } from "@/lib/catalog";
+import { useMemo, useState } from "react";
+import { CATEGORIES, FOR_WHO, OCCASIONS, PRODUCTS, THEMES, VIBES } from "@/lib/catalog";
 import { SITE_NAME, amazonSearchLink } from "@/lib/config";
-import type { BasketItem, ForWho, Occasion } from "@/lib/types";
+import { AddGiftModal, NewGift } from "@/components/AddGiftModal";
+import type { BasketItem, CatalogProduct, ForWho, Occasion, Vibe } from "@/lib/types";
 
 type Step = "build" | "details" | "done";
 type DraftItem = Omit<BasketItem, "claimedBy">;
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label]));
+
+// hero collage photos (nice-looking products from the catalog)
+const HERO_IMAGES = [
+  "https://cdn.dummyjson.com/product-images/fragrances/gucci-bloom-eau-de/thumbnail.webp",
+  "https://cdn.dummyjson.com/product-images/womens-watches/watch-gold-for-women/thumbnail.webp",
+  "https://cdn.dummyjson.com/product-images/mobile-accessories/apple-airpods-max-silver/thumbnail.webp",
+];
 
 function linkDomain(url?: string): string | null {
   if (!url) return null;
@@ -28,14 +36,12 @@ export default function Home() {
 
   // filters
   const [forWho, setForWho] = useState<ForWho | null>(null);
+  const [vibe, setVibe] = useState<Vibe | null>(null);
   const [category, setCategory] = useState<string>("all");
 
   // basket
   const [picked, setPicked] = useState<Record<string, DraftItem>>({});
   const [showCustomForm, setShowCustomForm] = useState(false);
-  const [custom, setCustom] = useState({ name: "", url: "", imageUrl: "" });
-  const [fetchingLink, setFetchingLink] = useState(false);
-  const [fetchNote, setFetchNote] = useState("");
 
   // details
   const [occasion, setOccasion] = useState<Occasion>("birthday");
@@ -49,52 +55,46 @@ export default function Home() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ shareId: string; manageKey: string } | null>(null);
 
-  // when a product link is pasted, read its name / photo automatically
-  useEffect(() => {
-    const url = custom.url.trim();
-    if (!/^https?:\/\/\S+\.\S+/.test(url)) return;
-    const timer = setTimeout(async () => {
-      setFetchingLink(true);
-      setFetchNote("");
-      try {
-        const res = await fetch("/api/product-preview", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        setCustom((prev) => ({
-          ...prev,
-          name: prev.name.trim() ? prev.name : data.name ?? "",
-          imageUrl: prev.imageUrl.trim() ? prev.imageUrl : data.imageUrl ?? "",
-        }));
-        setFetchNote(data.name || data.imageUrl ? "Details filled from the link." : "");
-      } catch (e) {
-        setFetchNote(e instanceof Error ? e.message : "Couldn't read that page - fill the details manually.");
-      } finally {
-        setFetchingLink(false);
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [custom.url]);
-
-  const visible = useMemo(
+  const matches = useMemo(
     () =>
       PRODUCTS.filter(
         (p) =>
           (!forWho || p.forWho === forWho || p.forWho === "anyone") &&
-          (category === "all" || p.category === category)
+          (!vibe || p.vibe === vibe || p.vibe === "any")
       ),
-    [forWho, category]
+    [forWho, vibe]
   );
+
+  // a spread across categories, so "picked for you" never feels one-note
+  const pickedForYou = useMemo(() => {
+    const byCat = new Map<string, CatalogProduct[]>();
+    for (const p of matches) {
+      const arr = byCat.get(p.category) ?? [];
+      arr.push(p);
+      byCat.set(p.category, arr);
+    }
+    const out: CatalogProduct[] = [];
+    let added = true;
+    while (out.length < 12 && added) {
+      added = false;
+      for (const arr of byCat.values()) {
+        const next = arr.shift();
+        if (next) {
+          out.push(next);
+          added = true;
+          if (out.length >= 12) break;
+        }
+      }
+    }
+    return out;
+  }, [matches]);
 
   const customItems = useMemo(
     () => Object.values(picked).filter((it) => it.id.startsWith("custom-")),
     [picked]
   );
-  const count = Object.keys(picked).length;
+  const pickedList = Object.values(picked);
+  const count = pickedList.length;
 
   function toggleProduct(id: string) {
     setPicked((prev) => {
@@ -122,21 +122,9 @@ export default function Home() {
     });
   }
 
-  function addCustom() {
-    const name = custom.name.trim();
-    if (!name) return;
+  function addCustom(gift: NewGift) {
     const id = `custom-${Date.now()}`;
-    setPicked((prev) => ({
-      ...prev,
-      [id]: {
-        id,
-        name,
-        url: custom.url.trim() || undefined,
-        imageUrl: custom.imageUrl.trim() || undefined,
-      },
-    }));
-    setCustom({ name: "", url: "", imageUrl: "" });
-    setFetchNote("");
+    setPicked((prev) => ({ ...prev, [id]: { id, ...gift } }));
     setShowCustomForm(false);
   }
 
@@ -153,7 +141,7 @@ export default function Home() {
           message,
           theme,
           eventDate,
-          items: Object.values(picked),
+          items: pickedList,
         }),
       });
       const data = await res.json();
@@ -196,7 +184,7 @@ export default function Home() {
               Private link — for you only
             </p>
             <p className="mt-1.5 text-sm text-[var(--muted)]">
-              This is where you see who reserved what. You&apos;ll always find it under{" "}
+              See who reserved what, and add or remove gifts anytime. You&apos;ll always find it under{" "}
               <a href="/my" className="underline underline-offset-2 hover:text-[var(--ink)]">
                 My lists
               </a>{" "}
@@ -218,7 +206,6 @@ export default function Home() {
 
   // --------------------------------------------------------------- details
   if (step === "details") {
-    const pickedList = Object.values(picked);
     return (
       <main className="min-h-screen px-6 py-16">
         <div className="max-w-lg mx-auto animate-rise">
@@ -324,6 +311,9 @@ export default function Home() {
   }
 
   // ----------------------------------------------------------------- build
+  const showShelves = category === "all";
+  const gridItems = showShelves ? [] : matches.filter((p) => p.category === category);
+
   return (
     <main className="min-h-screen pb-32">
       <header className="max-w-5xl mx-auto px-6 pt-8 flex items-baseline justify-between">
@@ -336,37 +326,66 @@ export default function Home() {
         </a>
       </header>
 
-      {/* hero — short and warm */}
-      <section className="max-w-5xl mx-auto px-6 pt-16 pb-12">
-        <h1 className="font-display text-5xl sm:text-6xl leading-[1.08] max-w-2xl">
-          Get gifts you&apos;ll <em className="text-[var(--accent)] not-italic font-display italic">actually</em> love.
-        </h1>
-        <p className="mt-5 text-lg text-[var(--muted)] max-w-xl">
-          Build your wishlist in a minute and share one link. Friends quietly reserve gifts —
-          so nothing gets bought twice.
-        </p>
-        <p className="mt-4 text-xs uppercase tracking-widest text-[var(--muted)]">
-          Free · no app · no signup
-        </p>
+      {/* hero with a small product collage */}
+      <section className="max-w-5xl mx-auto px-6 pt-14 pb-10">
+        <div className="relative">
+          <h1 className="font-display text-5xl sm:text-6xl leading-[1.08] max-w-2xl">
+            Get gifts you&apos;ll{" "}
+            <em className="text-[var(--accent)] not-italic font-display italic">actually</em> love.
+          </h1>
+          <p className="mt-5 text-lg text-[var(--muted)] max-w-xl">
+            Build your wishlist in a minute and share one link. Friends quietly reserve gifts —
+            so nothing gets bought twice.
+          </p>
+
+          <div className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 gap-0" aria-hidden>
+            {HERO_IMAGES.map((src, i) => (
+              <div
+                key={src}
+                className="h-28 w-28 rounded-2xl bg-[var(--tile)] border border-[var(--line)] shadow-md shadow-black/5 flex items-center justify-center p-3"
+                style={{
+                  transform: `rotate(${[-7, 4, -3][i]}deg) translateY(${[8, -10, 6][i]}px)`,
+                  marginLeft: i === 0 ? 0 : -14,
+                  zIndex: 3 - i,
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt="" className="max-h-full max-w-full object-contain mix-blend-multiply" />
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* builder */}
       <section className="max-w-5xl mx-auto px-6">
-        <div className="border-t border-[var(--line)] pt-8">
+        <div className="border-t border-[var(--line)] pt-7">
           <div className="flex flex-wrap items-center gap-2">
-            <Chip active={forWho === null} onClick={() => setForWho(null)}>
-              Everything
-            </Chip>
+            <span className="text-xs uppercase tracking-widest text-[var(--muted)] mr-1">
+              Gifting for
+            </span>
             {FOR_WHO.map((f) => (
-              <Chip key={f.id} active={forWho === f.id} onClick={() => setForWho(f.id)}>
+              <Chip key={f.id} active={forWho === f.id} onClick={() => setForWho(forWho === f.id ? null : f.id)}>
                 {f.label}
               </Chip>
             ))}
+            <span className="mx-1.5 h-4 w-px bg-[var(--line)]" />
+            {VIBES.map((v) => (
+              <Chip key={v.id} active={vibe === v.id} onClick={() => setVibe(vibe === v.id ? null : v.id)}>
+                {v.label}
+              </Chip>
+            ))}
+            <button
+              onClick={() => setShowCustomForm(true)}
+              className="ml-auto px-4 py-1.5 rounded-full text-sm font-medium bg-[var(--accent-soft)] text-[var(--accent-deep)] border border-[var(--accent)]/30 hover:bg-[var(--accent)]/15 transition"
+            >
+              + Add your own
+            </button>
           </div>
 
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1 -mx-6 px-6">
+          <div className="mt-4 flex gap-4 overflow-x-auto pb-1 -mx-6 px-6">
             <Tab active={category === "all"} onClick={() => setCategory("all")}>
-              All
+              Browse all
             </Tab>
             {CATEGORIES.map((c) => (
               <Tab key={c.id} active={category === c.id} onClick={() => setCategory(c.id)}>
@@ -376,165 +395,125 @@ export default function Home() {
           </div>
         </div>
 
-        {/* grid */}
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          <button
-            onClick={() => setShowCustomForm(true)}
-            className="rounded-2xl border border-dashed border-[var(--accent)]/40 bg-[var(--accent-soft)]/40 min-h-56 flex flex-col items-center justify-center gap-1.5 text-[var(--accent-deep)] hover:bg-[var(--accent-soft)] transition p-4"
-          >
-            <span className="text-2xl leading-none">+</span>
-            <span className="text-sm font-medium">Add your own</span>
-            <span className="text-xs opacity-80">paste any product link</span>
-          </button>
-
-          {/* items you added yourself, shown with their photo */}
-          {customItems.map((it) => {
-            const domain = linkDomain(it.url);
-            return (
-              <div
+        {/* your picks */}
+        {count > 0 && (
+          <Shelf title={`Your picks · ${count}`}>
+            {pickedList.map((it) => (
+              <ShelfCard
                 key={it.id}
-                className="rounded-2xl bg-[var(--surface)] border-2 border-[var(--accent)]/50 overflow-hidden"
-              >
-                <div className="aspect-square bg-[var(--tile)] p-5 flex items-center justify-center">
-                  {it.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={it.imageUrl}
-                      alt={it.name}
-                      loading="lazy"
-                      className="max-h-full max-w-full object-contain mix-blend-multiply"
+                image={it.imageUrl}
+                name={it.name}
+                sub={
+                  it.id.startsWith("custom-")
+                    ? linkDomain(it.url)
+                      ? `from ${linkDomain(it.url)}`
+                      : "added by you"
+                    : CATEGORY_LABEL[PRODUCTS.find((p) => p.id === it.id)?.category ?? ""] ?? ""
+                }
+                added
+                actionLabel="Remove"
+                onAction={() => removeItem(it.id)}
+              />
+            ))}
+          </Shelf>
+        )}
+
+        {showShelves ? (
+          <>
+            <Shelf
+              title={
+                forWho || vibe
+                  ? `Picked for ${[
+                      forWho ? FOR_WHO.find((f) => f.id === forWho)?.label.replace("For ", "") : null,
+                      vibe ? VIBES.find((v) => v.id === vibe)?.label.toLowerCase() : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}`
+                  : "Popular picks"
+              }
+            >
+              {pickedForYou.map((p) => (
+                <ShelfCard
+                  key={p.id}
+                  image={p.image}
+                  name={p.name}
+                  sub={CATEGORY_LABEL[p.category]}
+                  added={!!picked[p.id]}
+                  actionLabel={picked[p.id] ? "Added ✓" : "Add"}
+                  onAction={() => toggleProduct(p.id)}
+                />
+              ))}
+            </Shelf>
+
+            {CATEGORIES.map((c) => {
+              const items = matches.filter((p) => p.category === c.id);
+              if (items.length === 0) return null;
+              return (
+                <Shelf
+                  key={c.id}
+                  title={c.label}
+                  onSeeAll={() => {
+                    setCategory(c.id);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                >
+                  {items.map((p) => (
+                    <ShelfCard
+                      key={p.id}
+                      image={p.image}
+                      name={p.name}
+                      sub={CATEGORY_LABEL[p.category]}
+                      added={!!picked[p.id]}
+                      actionLabel={picked[p.id] ? "Added ✓" : "Add"}
+                      onAction={() => toggleProduct(p.id)}
                     />
-                  ) : (
-                    <span className="font-display text-4xl text-[var(--muted)]">
-                      {it.name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="p-3">
-                  <p className="text-sm font-medium leading-snug line-clamp-2">{it.name}</p>
-                  <p className="text-xs text-[var(--muted)] mt-0.5">
-                    {domain ? `from ${domain}` : "added by you"}
-                  </p>
-                  <button
-                    onClick={() => removeItem(it.id)}
-                    className="mt-2.5 w-full py-1.5 rounded-full text-sm font-medium bg-[var(--ink)] text-white"
-                  >
-                    Added ✓ tap to remove
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-
-          {visible.map((p) => {
-            const added = !!picked[p.id];
-            return (
-              <div
-                key={p.id}
-                className={`rounded-2xl bg-[var(--surface)] border overflow-hidden transition ${
-                  added ? "border-2 border-[var(--accent)]/50" : "border-[var(--line)]"
-                }`}
+                  ))}
+                </Shelf>
+              );
+            })}
+          </>
+        ) : (
+          <>
+            <div className="mt-8 flex items-baseline justify-between">
+              <h2 className="font-display text-2xl">{CATEGORY_LABEL[category]}</h2>
+              <button
+                onClick={() => setCategory("all")}
+                className="text-sm text-[var(--muted)] hover:text-[var(--ink)] underline underline-offset-4"
               >
-                <div className="aspect-square bg-[var(--tile)] p-5 flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={p.image}
-                    alt={p.name}
-                    loading="lazy"
-                    className="max-h-full max-w-full object-contain mix-blend-multiply"
-                  />
-                </div>
-                <div className="p-3">
-                  <p className="text-sm font-medium leading-snug line-clamp-2">{p.name}</p>
-                  <p className="text-xs text-[var(--muted)] mt-0.5">{CATEGORY_LABEL[p.category]}</p>
-                  <button
-                    onClick={() => toggleProduct(p.id)}
-                    className={`mt-2.5 w-full py-1.5 rounded-full text-sm font-medium border transition ${
-                      added
-                        ? "bg-[var(--ink)] text-white border-[var(--ink)]"
-                        : "border-[var(--accent)]/40 text-[var(--accent-deep)] hover:bg-[var(--accent-soft)]/60"
-                    }`}
-                  >
-                    {added ? "Added ✓" : "Add"}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {visible.length === 0 && customItems.length === 0 && (
-          <p className="text-center text-[var(--muted)] mt-16 text-sm">
-            Nothing here — try another category.
-          </p>
+                ← Browse all
+              </button>
+            </div>
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {gridItems.map((p) => (
+                <GridCard
+                  key={p.id}
+                  image={p.image}
+                  name={p.name}
+                  sub={CATEGORY_LABEL[p.category]}
+                  added={!!picked[p.id]}
+                  actionLabel={picked[p.id] ? "Added ✓" : "Add"}
+                  onAction={() => toggleProduct(p.id)}
+                />
+              ))}
+            </div>
+            {gridItems.length === 0 && (
+              <p className="text-center text-[var(--muted)] mt-16 text-sm">
+                Nothing matches here — try removing a filter.
+              </p>
+            )}
+          </>
         )}
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 mt-20 pt-6 border-t border-[var(--line)] text-xs text-[var(--muted)]">
-        {SITE_NAME} — free gift lists for every occasion.
+      <footer className="max-w-5xl mx-auto px-6 mt-20 pt-6 border-t border-[var(--line)] flex items-baseline justify-between text-xs text-[var(--muted)]">
+        <span>{SITE_NAME} — free gift lists for every occasion.</span>
+        <a href="/my" className="hover:text-[var(--ink)] underline-offset-2 hover:underline">
+          My lists
+        </a>
       </footer>
 
-      {/* custom product modal */}
       {showCustomForm && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-[var(--surface)] rounded-2xl p-6 w-full max-w-md animate-rise">
-            <h3 className="font-display text-2xl">Add your own gift</h3>
-            <p className="text-sm text-[var(--muted)] mt-1">
-              Paste a link from Amazon, Flipkart, Myntra — the name and photo fill in automatically.
-            </p>
-            <div className="mt-5 space-y-3">
-              <input
-                value={custom.url}
-                onChange={(e) => setCustom({ ...custom, url: e.target.value })}
-                placeholder="Paste product link"
-                className="input"
-              />
-              {(fetchingLink || fetchNote) && (
-                <p className="text-xs text-[var(--muted)] px-1">
-                  {fetchingLink ? "Reading the link…" : fetchNote}
-                </p>
-              )}
-              {custom.imageUrl && (
-                <div className="flex items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--tile)] p-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={custom.imageUrl}
-                    alt=""
-                    className="h-14 w-14 object-contain mix-blend-multiply"
-                  />
-                  <p className="text-xs text-[var(--muted)] leading-snug line-clamp-3">
-                    {custom.name || "Photo found"}
-                  </p>
-                </div>
-              )}
-              <input
-                value={custom.name}
-                onChange={(e) => setCustom({ ...custom, name: e.target.value })}
-                placeholder="Gift name"
-                maxLength={120}
-                className="input"
-              />
-            </div>
-            <div className="mt-5 flex gap-3">
-              <button
-                onClick={() => {
-                  setShowCustomForm(false);
-                  setFetchNote("");
-                }}
-                className="flex-1 py-2.5 rounded-full border border-[var(--line)] text-sm font-medium text-[var(--muted)]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={addCustom}
-                disabled={!custom.name.trim()}
-                className="btn-primary flex-1 py-2.5 text-sm"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        </div>
+        <AddGiftModal onAdd={addCustom} onClose={() => setShowCustomForm(false)} />
       )}
 
       {/* sticky continue bar */}
@@ -555,6 +534,109 @@ export default function Home() {
 }
 
 // ----------------------------- small pieces --------------------------------
+
+function Shelf({
+  title,
+  onSeeAll,
+  children,
+}: {
+  title: string;
+  onSeeAll?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mt-9">
+      <div className="flex items-baseline justify-between">
+        <h2 className="font-display text-xl">{title}</h2>
+        {onSeeAll && (
+          <button
+            onClick={onSeeAll}
+            className="text-sm text-[var(--muted)] hover:text-[var(--accent-deep)]"
+          >
+            See all →
+          </button>
+        )}
+      </div>
+      <div className="mt-3 flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 snap-x">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function CardBody({
+  image,
+  name,
+  sub,
+  added,
+  actionLabel,
+  onAction,
+}: {
+  image?: string;
+  name: string;
+  sub: string;
+  added: boolean;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <>
+      <div className="aspect-square bg-[var(--tile)] p-4 flex items-center justify-center">
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={image}
+            alt={name}
+            loading="lazy"
+            className="max-h-full max-w-full object-contain mix-blend-multiply"
+          />
+        ) : (
+          <span className="font-display text-3xl text-[var(--muted)]">
+            {name.charAt(0).toUpperCase()}
+          </span>
+        )}
+      </div>
+      <div className="p-2.5">
+        <p className="text-[13px] font-medium leading-snug line-clamp-2 min-h-[2.4em]">{name}</p>
+        <p className="text-[11px] text-[var(--muted)] mt-0.5 truncate">{sub}</p>
+        <button
+          onClick={onAction}
+          className={`mt-2 w-full py-1.5 rounded-full text-[13px] font-medium border transition ${
+            added
+              ? "bg-[var(--ink)] text-white border-[var(--ink)]"
+              : "border-[var(--accent)]/40 text-[var(--accent-deep)] hover:bg-[var(--accent-soft)]/60"
+          }`}
+        >
+          {actionLabel}
+        </button>
+      </div>
+    </>
+  );
+}
+
+function ShelfCard(props: Parameters<typeof CardBody>[0]) {
+  return (
+    <div
+      className={`snap-start shrink-0 w-40 rounded-2xl bg-[var(--surface)] overflow-hidden border ${
+        props.added ? "border-2 border-[var(--accent)]/50" : "border-[var(--line)]"
+      }`}
+    >
+      <CardBody {...props} />
+    </div>
+  );
+}
+
+function GridCard(props: Parameters<typeof CardBody>[0]) {
+  return (
+    <div
+      className={`rounded-2xl bg-[var(--surface)] overflow-hidden border ${
+        props.added ? "border-2 border-[var(--accent)]/50" : "border-[var(--line)]"
+      }`}
+    >
+      <CardBody {...props} />
+    </div>
+  );
+}
 
 function Chip({
   active,

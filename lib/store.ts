@@ -39,6 +39,10 @@ interface Store {
   unclaimItem(shareId: string, itemId: string, claimToken: string): Promise<boolean>;
   /** Creator override from the manage page: clear a reservation without a token. */
   releaseItem(shareId: string, itemId: string): Promise<boolean>;
+  /** Creator: add a gift to an existing list. Returns the new item. */
+  addItem(shareId: string, item: Omit<BasketItem, "claimedBy" | "id">): Promise<BasketItem | null>;
+  /** Creator: remove a gift from an existing list. */
+  removeItem(shareId: string, itemId: string): Promise<boolean>;
 }
 
 // ------------------------------ in-memory ---------------------------------
@@ -104,6 +108,21 @@ const memoryStore: Store = {
     item.claimedBy = null;
     delete b.claimTokens[itemId];
     return true;
+  },
+  async addItem(shareId, item) {
+    const b = mem.get(shareId);
+    if (!b) return null;
+    const newItem: BasketItem = { ...item, id: `${shareId}-added-${Date.now()}`, claimedBy: null };
+    b.items.push(newItem);
+    return newItem;
+  },
+  async removeItem(shareId, itemId) {
+    const b = mem.get(shareId);
+    if (!b) return false;
+    const before = b.items.length;
+    b.items = b.items.filter((i) => i.id !== itemId);
+    delete b.claimTokens[itemId];
+    return b.items.length < before;
   },
 };
 
@@ -253,6 +272,26 @@ const postgresStore: Store = {
       where id = ${itemId} and basket_id = ${basket.id} and claimed_by is not null
       returning id`;
     return updated.length > 0;
+  },
+  async addItem(shareId, item) {
+    const sql = db();
+    const [basket] = await sql`select id from baskets where share_id = ${shareId}`;
+    if (!basket) return null;
+    const id = `${shareId}-added-${Date.now()}`;
+    const [{ next }] = await sql`
+      select coalesce(max(position), 0) + 1 as next from basket_items where basket_id = ${basket.id}`;
+    await sql`
+      insert into basket_items (id, basket_id, name, image_url, url, position)
+      values (${id}, ${basket.id}, ${item.name}, ${item.imageUrl ?? null}, ${item.url ?? null}, ${next})`;
+    return { id, name: item.name, imageUrl: item.imageUrl, url: item.url, claimedBy: null };
+  },
+  async removeItem(shareId, itemId) {
+    const sql = db();
+    const [basket] = await sql`select id from baskets where share_id = ${shareId}`;
+    if (!basket) return false;
+    const deleted = await sql`
+      delete from basket_items where id = ${itemId} and basket_id = ${basket.id} returning id`;
+    return deleted.length > 0;
   },
 };
 

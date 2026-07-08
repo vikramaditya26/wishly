@@ -1,9 +1,11 @@
 "use client";
 
 // The creator's item list on the manage page: photo, name, who reserved it,
-// and an undo button so the host can fix mistakes or mischief.
+// undo a reservation, remove a gift, or add new gifts - the list stays alive
+// after creation.
 
 import { useState } from "react";
+import { AddGiftModal, NewGift } from "@/components/AddGiftModal";
 import type { BasketItem } from "@/lib/types";
 
 export function ManageList({
@@ -17,6 +19,8 @@ export function ManageList({
 }) {
   const [items, setItems] = useState(initialItems);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   const reserved = items.filter((i) => i.claimedBy).length;
 
@@ -37,13 +41,59 @@ export function ManageList({
     }
   }
 
+  async function remove(item: BasketItem) {
+    const warning = item.claimedBy
+      ? `Remove "${item.name}"? ${item.claimedBy} already reserved it - maybe tell them.`
+      : `Remove "${item.name}" from your list?`;
+    if (!window.confirm(warning)) return;
+    setBusyId(item.id);
+    try {
+      const res = await fetch(`/api/baskets/${shareId}/items`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId: item.id, key: manageKey }),
+      });
+      if (res.ok) {
+        setItems((prev) => prev.filter((i) => i.id !== item.id));
+      }
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function add(gift: NewGift) {
+    setAdding(true);
+    try {
+      const res = await fetch(`/api/baskets/${shareId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...gift, key: manageKey }),
+      });
+      const data = await res.json();
+      if (res.ok && data.item) {
+        setItems((prev) => [...prev, data.item]);
+        setShowAdd(false);
+      }
+    } finally {
+      setAdding(false);
+    }
+  }
+
   return (
     <>
-      <p className="text-[var(--muted)] text-sm mt-2">
-        {reserved} of {items.length} gifts reserved. Refresh anytime for updates.
-      </p>
+      <div className="mt-2 flex items-baseline justify-between gap-4">
+        <p className="text-[var(--muted)] text-sm">
+          {reserved} of {items.length} gifts reserved.
+        </p>
+        <button
+          onClick={() => setShowAdd(true)}
+          className="text-sm font-medium text-[var(--accent-deep)] hover:underline underline-offset-4 whitespace-nowrap"
+        >
+          + Add a gift
+        </button>
+      </div>
 
-      <div className="mt-8 divide-y divide-[var(--line)] border-y border-[var(--line)]">
+      <div className="mt-6 divide-y divide-[var(--line)] border-y border-[var(--line)]">
         {items.map((item) => (
           <div key={item.id} className="py-3 flex items-center gap-4">
             <div className="h-12 w-12 shrink-0 rounded-xl bg-[var(--tile)] border border-[var(--line)] flex items-center justify-center overflow-hidden">
@@ -71,18 +121,34 @@ export function ManageList({
                 <p className="text-xs text-[var(--muted)] mt-0.5">Waiting</p>
               )}
             </div>
-            {item.claimedBy && (
+            <div className="flex items-center gap-3 whitespace-nowrap">
+              {item.claimedBy && (
+                <button
+                  onClick={() => release(item)}
+                  disabled={busyId === item.id}
+                  className="text-xs text-[var(--muted)] underline underline-offset-2 hover:text-[var(--ink)] disabled:opacity-40"
+                >
+                  undo
+                </button>
+              )}
               <button
-                onClick={() => release(item)}
+                onClick={() => remove(item)}
                 disabled={busyId === item.id}
-                className="text-xs text-[var(--muted)] underline underline-offset-2 hover:text-[var(--ink)] disabled:opacity-40 whitespace-nowrap"
+                className="text-xs text-[var(--muted)] underline underline-offset-2 hover:text-[var(--accent-deep)] disabled:opacity-40"
               >
-                {busyId === item.id ? "…" : "undo"}
+                remove
               </button>
-            )}
+            </div>
           </div>
         ))}
+        {items.length === 0 && (
+          <p className="py-8 text-center text-sm text-[var(--muted)]">
+            No gifts on this list yet — add one above.
+          </p>
+        )}
       </div>
+
+      {showAdd && <AddGiftModal onAdd={add} onClose={() => setShowAdd(false)} busy={adding} />}
     </>
   );
 }

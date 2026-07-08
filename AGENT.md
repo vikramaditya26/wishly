@@ -251,3 +251,19 @@ README for the owner-facing step-by-step.
   brand colours on successful reservation; skips when
   prefers-reduced-motion; self-removes after ~1.5s. ClaimGrid now takes a
   `hostName` prop for the nudge message.
+- **2026-07-08 (v4: shelves + editable lists)** — Owner feedback: too much
+  scrolling, page too plain, no way to edit lists. (1) Browsing is now
+  shelf-based: "Popular picks"/"Picked for her · student" spread-across-
+  categories shelf + one horizontal snap-scroll row per category with
+  "See all →" (tapping a category tab shows its full grid; "Browse all"
+  returns to shelves). (2) Persona filters restored: For her/him AND
+  Student/Working (`vibe` back in types; assigned via STUDENT_IDS/WORKING_IDS
+  sets in catalog.ts, default "any"). (3) "Your picks · n" shelf shows
+  everything selected (incl. custom items) with Remove. (4) Hero: rotated
+  3-photo product collage (desktop), "Free · no app" line removed per owner.
+  (5) Lists are editable after creation: `POST/DELETE
+  /api/baskets/[shareId]/items` (manage-key-gated) + `addItem`/`removeItem`
+  in both stores; manage page has "+ Add a gift" (shared
+  `components/AddGiftModal.tsx`, extracted from the builder) and per-item
+  "remove" (warns if the gift was already reserved). Full add/remove/guest
+  round trip verified locally against the live DB.
