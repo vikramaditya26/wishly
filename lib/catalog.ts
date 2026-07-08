@@ -37,13 +37,21 @@ export const CATEGORIES: { id: string; label: string }[] = [
   { id: "sports", label: "Sports" },
 ];
 
-// Guest-page themes: quiet paper tints, not loud gradients.
-export const THEMES: { id: string; label: string; bg: string; tile: string }[] = [
-  { id: "ivory", label: "Ivory", bg: "#faf7f1", tile: "#f4efe6" },
-  { id: "blush", label: "Blush", bg: "#f9f0ee", tile: "#f3e6e2" },
-  { id: "sage", label: "Sage", bg: "#f1f4ee", tile: "#e9eee2" },
-  { id: "sky", label: "Sky", bg: "#eff3f6", tile: "#e5ecf1" },
-  { id: "lavender", label: "Lavender", bg: "#f2eff7", tile: "#eae5f2" },
+// Guest-page themes. `deep` drives the ribbon, headline accent and swatches,
+// so picking a colour makes an OBVIOUS difference (earlier tints were so
+// subtle the owner thought the picker was broken).
+export const THEMES: {
+  id: string;
+  label: string;
+  bg: string; // page background
+  tile: string; // product image tile
+  deep: string; // strong accent: ribbon, headings, swatch
+}[] = [
+  { id: "ivory", label: "Marigold", bg: "#fbf3e2", tile: "#f5e6c4", deep: "#b98a2f" },
+  { id: "blush", label: "Rose", bg: "#fbecec", tile: "#f5d6d6", deep: "#c2565e" },
+  { id: "sage", label: "Mehendi", bg: "#eff4e9", tile: "#dfe9cf", deep: "#6f8f57" },
+  { id: "sky", label: "Sky", bg: "#ebf2f8", tile: "#d6e5f1", deep: "#4f7ea8" },
+  { id: "lavender", label: "Lavender", bg: "#f2edf8", tile: "#e2d8f1", deep: "#7a63a8" },
 ];
 
 const CDN = "https://cdn.dummyjson.com/product-images";

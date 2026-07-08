@@ -267,3 +267,24 @@ README for the owner-facing step-by-step.
   `components/AddGiftModal.tsx`, extracted from the builder) and per-item
   "remove" (warns if the gift was already reserved). Full add/remove/guest
   round trip verified locally against the live DB.
+- **2026-07-08 (v5: soul pass)** — Owner: site felt "dead", colours not
+  festive, picker looked broken, no footer, no dashboard link after creating,
+  no way to delete a saved list, date showed year. Researched US gifting
+  sites (Babylist etc. — warm coral/terracotta + playful accents). Changes:
+  (1) Global gift-wrap ribbon in `app/layout.tsx` (5-colour gradient bar).
+  (2) THEMES restructured with a strong `deep` colour (marigold/rose/mehendi/
+  sky/lavender) that now drives the guest ribbon, headline eyebrow, message
+  card border, countdown pill AND the picker swatches — swatches were nearly
+  identical tints before (why owner thought colour selection was "not
+  working"; it worked, just invisibly). (3) Home hero: rotating occasion word
+  (`OCCASION_WORDS`, 2.2s), blurred colour blobs, festive dots on category
+  shelves, numbered "How it works" section, and a full 3-column footer
+  (brand / links / occasion chips / copyright) — page had nothing below the
+  grid before. (4) Success screen now has a prominent "Open my dashboard →"
+  button (previously the only way on was the raw manage link). (5) Guest date
+  is DD Month (no year) + a live "N days to go" countdown pill (<=90 days).
+  (6) Delete-a-list: new `DELETE /api/baskets/[shareId]` (manage-key-gated) +
+  `deleteBasket()` in both stores; `/my` cards get a "Delete this list"
+  action that removes from DB and localStorage, plus a colour accent strip.
+  All verified locally against live DB (create→theme→countdown→delete→link
+  dies; wrong-key delete rejected 403).

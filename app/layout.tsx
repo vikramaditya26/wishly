@@ -51,7 +51,18 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${playfair.variable} ${dmSans.variable}`}>{children}</body>
+      <body className={`${playfair.variable} ${dmSans.variable}`}>
+        {/* the ribbon — a thin gift-wrap stripe across every page */}
+        <div
+          aria-hidden
+          className="h-1.5 w-full"
+          style={{
+            background:
+              "linear-gradient(90deg, #d97742 0%, #c2565e 25%, #b98a2f 50%, #6f8f57 75%, #4f7ea8 100%)",
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

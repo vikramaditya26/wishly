@@ -43,6 +43,8 @@ interface Store {
   addItem(shareId: string, item: Omit<BasketItem, "claimedBy" | "id">): Promise<BasketItem | null>;
   /** Creator: remove a gift from an existing list. */
   removeItem(shareId: string, itemId: string): Promise<boolean>;
+  /** Creator: delete the whole list (verifies the manage key first). */
+  deleteBasket(shareId: string, key: string): Promise<boolean>;
 }
 
 // ------------------------------ in-memory ---------------------------------
@@ -123,6 +125,11 @@ const memoryStore: Store = {
     b.items = b.items.filter((i) => i.id !== itemId);
     delete b.claimTokens[itemId];
     return b.items.length < before;
+  },
+  async deleteBasket(shareId, key) {
+    const b = mem.get(shareId);
+    if (!b || b.manageKey !== key) return false;
+    return mem.delete(shareId);
   },
 };
 
@@ -291,6 +298,13 @@ const postgresStore: Store = {
     if (!basket) return false;
     const deleted = await sql`
       delete from basket_items where id = ${itemId} and basket_id = ${basket.id} returning id`;
+    return deleted.length > 0;
+  },
+  async deleteBasket(shareId, key) {
+    const sql = db();
+    // basket_items cascade on delete (see schema.sql)
+    const deleted = await sql`
+      delete from baskets where share_id = ${shareId} and manage_key = ${key} returning id`;
     return deleted.length > 0;
   },
 };

@@ -17,9 +17,12 @@ interface SavedBasket {
   createdAt: number;
 }
 
+const DOTS = ["#c2565e", "#b98a2f", "#6f8f57", "#4f7ea8", "#7a63a8"];
+
 export default function MyListsPage() {
   const [lists, setLists] = useState<SavedBasket[] | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -36,6 +39,32 @@ export default function MyListsPage() {
       setCopiedId(shareId);
       setTimeout(() => setCopiedId(null), 1500);
     });
+  }
+
+  async function deleteList(list: SavedBasket) {
+    if (
+      !window.confirm(
+        `Delete ${list.hostName}'s list for good? The share link will stop working for everyone.`
+      )
+    )
+      return;
+    setDeletingId(list.shareId);
+    try {
+      // remove from the database (best effort), then from this browser
+      await fetch(`/api/baskets/${list.shareId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: list.manageKey }),
+      }).catch(() => {});
+      try {
+        const raw: SavedBasket[] = JSON.parse(localStorage.getItem("wishly-my-baskets") || "[]");
+        const next = raw.filter((l) => l.shareId !== list.shareId);
+        localStorage.setItem("wishly-my-baskets", JSON.stringify(next));
+      } catch {}
+      setLists((prev) => (prev ? prev.filter((l) => l.shareId !== list.shareId) : prev));
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   return (
@@ -63,36 +92,46 @@ export default function MyListsPage() {
           </div>
         ) : (
           <div className="mt-8 space-y-3">
-            {lists.map((l) => {
+            {lists.map((l, i) => {
               const occ = OCCASIONS.find((o) => o.id === l.occasion);
               const date = new Date(l.createdAt).toLocaleDateString("en-IN", {
                 day: "numeric",
                 month: "short",
-                year: "numeric",
               });
+              const dot = DOTS[i % DOTS.length];
               return (
                 <div
                   key={l.shareId + l.createdAt}
-                  className="rounded-2xl bg-[var(--surface)] border border-[var(--line)] p-4"
+                  className="rounded-2xl bg-[var(--surface)] border border-[var(--line)] overflow-hidden"
                 >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-display text-lg truncate">
-                      {l.hostName}&apos;s {occ ? occ.label : "list"}
-                    </p>
-                    <p className="text-xs text-[var(--muted)] whitespace-nowrap">{date}</p>
-                  </div>
-                  <div className="mt-3 flex gap-2">
-                    <Link
-                      href={`/manage/${l.shareId}?key=${l.manageKey}`}
-                      className="btn-primary flex-1 py-2 text-center text-sm"
-                    >
-                      Open dashboard
-                    </Link>
+                  <div className="h-1" style={{ background: dot }} />
+                  <div className="p-4">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="font-display text-lg truncate">
+                        {l.hostName}&apos;s {occ ? occ.label : "list"}
+                      </p>
+                      <p className="text-xs text-[var(--muted)] whitespace-nowrap">{date}</p>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <Link
+                        href={`/manage/${l.shareId}?key=${l.manageKey}`}
+                        className="btn-primary flex-1 py-2 text-center text-sm"
+                      >
+                        Open dashboard
+                      </Link>
+                      <button
+                        onClick={() => copyShareLink(l.shareId)}
+                        className="flex-1 py-2 rounded-full border border-[var(--line)] text-sm font-medium hover:border-[var(--accent)] hover:text-[var(--accent-deep)] transition"
+                      >
+                        {copiedId === l.shareId ? "Copied" : "Copy share link"}
+                      </button>
+                    </div>
                     <button
-                      onClick={() => copyShareLink(l.shareId)}
-                      className="flex-1 py-2 rounded-full border border-[var(--line)] text-sm font-medium hover:border-[var(--accent)] hover:text-[var(--accent-deep)] transition"
+                      onClick={() => deleteList(l)}
+                      disabled={deletingId === l.shareId}
+                      className="mt-2.5 text-xs text-[var(--muted)] hover:text-[var(--accent-deep)] underline underline-offset-2 disabled:opacity-40"
                     >
-                      {copiedId === l.shareId ? "Copied" : "Copy share link"}
+                      {deletingId === l.shareId ? "Deleting…" : "Delete this list"}
                     </button>
                   </div>
                 </div>

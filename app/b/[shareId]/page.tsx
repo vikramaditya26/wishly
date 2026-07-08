@@ -42,7 +42,18 @@ function prettyDate(d?: string): string | null {
   if (!d) return null;
   const date = new Date(d + "T00:00:00");
   if (isNaN(date.getTime())) return null;
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "long" });
+}
+
+function daysToGo(d?: string): string | null {
+  if (!d) return null;
+  const date = new Date(d + "T00:00:00");
+  if (isNaN(date.getTime())) return null;
+  const days = Math.ceil((date.getTime() - Date.now()) / 86400000);
+  if (days < 0 || days > 90) return null;
+  if (days === 0) return "It's today!";
+  if (days === 1) return "Tomorrow!";
+  return `${days} days to go`;
 }
 
 export default async function GuestPage({ params }: { params: Promise<{ shareId: string }> }) {
@@ -66,27 +77,54 @@ export default async function GuestPage({ params }: { params: Promise<{ shareId:
 
   const theme = THEMES.find((t) => t.id === basket.theme) ?? THEMES[0];
   const date = prettyDate(basket.eventDate);
+  const countdown = daysToGo(basket.eventDate);
 
   return (
     <main className="min-h-screen pb-20" style={{ background: theme.bg }}>
+      {/* theme ribbon */}
+      <div className="h-1.5 w-full" style={{ background: theme.deep }} aria-hidden />
       <div className="max-w-4xl mx-auto px-6 pt-10">
         <p className="font-display text-xl text-center">{SITE_NAME}</p>
 
-        <div className="text-center mt-14 animate-rise">
-          <h1 className="font-display text-5xl sm:text-6xl leading-tight">
+        <div className="text-center mt-12 animate-rise">
+          <p
+            className="text-xs font-medium uppercase tracking-[0.25em]"
+            style={{ color: theme.deep }}
+          >
+            You&apos;re invited to pick a gift
+          </p>
+          <h1 className="font-display text-5xl sm:text-6xl leading-tight mt-4">
             {headline(basket.occasion, basket.hostName)}
           </h1>
-          {date && (
-            <p className="mt-3 text-sm uppercase tracking-widest text-[var(--muted)]">{date}</p>
+          {(date || countdown) && (
+            <div className="mt-4 flex items-center justify-center gap-3">
+              {date && (
+                <span className="text-sm uppercase tracking-widest text-[var(--muted)]">{date}</span>
+              )}
+              {countdown && (
+                <span
+                  className="text-xs font-medium px-3 py-1 rounded-full text-white"
+                  style={{ background: theme.deep }}
+                >
+                  {countdown}
+                </span>
+              )}
+            </div>
           )}
           {basket.message && (
-            <p className="font-display italic text-lg mt-8 max-w-xl mx-auto leading-relaxed">
-              &ldquo;{basket.message}&rdquo;
-            </p>
+            <div
+              className="mt-8 max-w-xl mx-auto bg-white/60 rounded-2xl px-6 py-5 border-l-4 text-left"
+              style={{ borderLeftColor: theme.deep }}
+            >
+              <p className="font-display italic text-lg leading-relaxed">
+                &ldquo;{basket.message}&rdquo;
+              </p>
+              <p className="mt-2 text-sm text-[var(--muted)]">— {basket.hostName}</p>
+            </div>
           )}
         </div>
 
-        <p className="mt-14 text-center text-sm text-[var(--muted)]">
+        <p className="mt-12 text-center text-sm text-[var(--muted)]">
           These are gifts {basket.hostName.split(" ")[0]} would love. Reserve one — quietly — so
           nothing gets bought twice.
         </p>
@@ -98,12 +136,18 @@ export default async function GuestPage({ params }: { params: Promise<{ shareId:
           hostName={basket.hostName}
         />
 
-        <footer className="mt-20 pt-6 border-t border-black/5 text-center text-xs text-[var(--muted)]">
-          Made with{" "}
-          <Link href="/" className="underline underline-offset-2 hover:text-[var(--ink)]">
-            {SITE_NAME}
-          </Link>{" "}
-          — free gift lists for every occasion.
+        <footer className="mt-20 pt-8 border-t border-black/5 text-center">
+          <p className="font-display text-lg">Someone you love has a day coming up too.</p>
+          <Link
+            href="/"
+            className="btn-primary inline-block mt-4 px-8 py-2.5 text-sm"
+            style={{ background: theme.deep }}
+          >
+            Make your own list — it&apos;s free
+          </Link>
+          <p className="mt-4 text-xs text-[var(--muted)]">
+            Made with {SITE_NAME} — gift lists for every occasion.
+          </p>
         </footer>
       </div>
     </main>

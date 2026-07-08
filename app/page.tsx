@@ -4,7 +4,7 @@
 // row plus one horizontal row per category) so a big catalog never becomes an
 // endless wall - tap a category name to see all of it as a grid.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CATEGORIES, FOR_WHO, OCCASIONS, PRODUCTS, THEMES, VIBES } from "@/lib/catalog";
 import { SITE_NAME, amazonSearchLink } from "@/lib/config";
 import { AddGiftModal, NewGift } from "@/components/AddGiftModal";
@@ -31,6 +31,10 @@ function linkDomain(url?: string): string | null {
   }
 }
 
+// celebration palette — used for the rotating word, shelf dots and steps
+const FESTIVE = ["#c2565e", "#b98a2f", "#6f8f57", "#4f7ea8", "#7a63a8"];
+const OCCASION_WORDS = ["birthdays", "weddings", "anniversaries", "housewarmings", "farewells"];
+
 export default function Home() {
   const [step, setStep] = useState<Step>("build");
 
@@ -54,6 +58,13 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ shareId: string; manageKey: string } | null>(null);
+
+  // rotating occasion word in the hero
+  const [wordIdx, setWordIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setWordIdx((i) => (i + 1) % OCCASION_WORDS.length), 2200);
+    return () => clearInterval(t);
+  }, []);
 
   const matches = useMemo(
     () =>
@@ -179,6 +190,16 @@ export default function Home() {
             <WhatsAppButton path={`/b/${result.shareId}`} />
           </div>
 
+          <a
+            href={`/manage/${result.shareId}?key=${result.manageKey}`}
+            className="btn-primary block text-center w-full py-3 text-[15px] mt-8"
+          >
+            Open my dashboard →
+          </a>
+          <p className="mt-2 text-xs text-[var(--muted)] text-center">
+            Watch reservations come in, add or remove gifts anytime.
+          </p>
+
           <div className="mt-10 border-t border-[var(--line)] pt-6">
             <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
               Private link — for you only
@@ -284,12 +305,12 @@ export default function Home() {
                     onClick={() => setTheme(t.id)}
                     title={t.label}
                     aria-label={t.label}
-                    className={`h-9 w-9 rounded-full border transition ${
+                    className={`h-9 w-9 rounded-full border-2 transition ${
                       theme === t.id
-                        ? "border-[var(--accent)] ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]"
-                        : "border-[var(--line)]"
+                        ? "border-[var(--ink)] ring-2 ring-[var(--ink)] ring-offset-2 ring-offset-[var(--bg)] scale-110"
+                        : "border-white/60"
                     }`}
-                    style={{ background: t.tile }}
+                    style={{ background: t.deep }}
                   />
                 ))}
               </div>
@@ -327,13 +348,33 @@ export default function Home() {
       </header>
 
       {/* hero with a small product collage */}
-      <section className="max-w-5xl mx-auto px-6 pt-14 pb-10">
+      <section className="max-w-5xl mx-auto px-6 pt-14 pb-10 relative">
+        {/* soft celebration blobs */}
+        <div
+          aria-hidden
+          className="absolute -top-10 right-10 h-56 w-56 rounded-full opacity-25 blur-3xl pointer-events-none"
+          style={{ background: "#e8a06a" }}
+        />
+        <div
+          aria-hidden
+          className="absolute top-24 -left-16 h-44 w-44 rounded-full opacity-20 blur-3xl pointer-events-none"
+          style={{ background: "#c2565e" }}
+        />
         <div className="relative">
           <h1 className="font-display text-5xl sm:text-6xl leading-[1.08] max-w-2xl">
             Get gifts you&apos;ll{" "}
             <em className="text-[var(--accent)] not-italic font-display italic">actually</em> love.
           </h1>
-          <p className="mt-5 text-lg text-[var(--muted)] max-w-xl">
+          <p className="font-display italic text-2xl mt-4 h-8">
+            <span
+              key={wordIdx}
+              className="animate-rise inline-block"
+              style={{ color: FESTIVE[wordIdx % FESTIVE.length] }}
+            >
+              for {OCCASION_WORDS[wordIdx]}
+            </span>
+          </p>
+          <p className="mt-4 text-lg text-[var(--muted)] max-w-xl">
             Build your wishlist in a minute and share one link. Friends quietly reserve gifts —
             so nothing gets bought twice.
           </p>
@@ -445,13 +486,14 @@ export default function Home() {
               ))}
             </Shelf>
 
-            {CATEGORIES.map((c) => {
+            {CATEGORIES.map((c, ci) => {
               const items = matches.filter((p) => p.category === c.id);
               if (items.length === 0) return null;
               return (
                 <Shelf
                   key={c.id}
                   title={c.label}
+                  dot={FESTIVE[ci % FESTIVE.length]}
                   onSeeAll={() => {
                     setCategory(c.id);
                     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -505,11 +547,79 @@ export default function Home() {
         )}
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 mt-20 pt-6 border-t border-[var(--line)] flex items-baseline justify-between text-xs text-[var(--muted)]">
-        <span>{SITE_NAME} — free gift lists for every occasion.</span>
-        <a href="/my" className="hover:text-[var(--ink)] underline-offset-2 hover:underline">
-          My lists
-        </a>
+      {/* how it works */}
+      <section id="how" className="max-w-5xl mx-auto px-6 mt-24">
+        <h2 className="font-display text-3xl text-center">
+          How it works<span className="text-[var(--accent)]">.</span>
+        </h2>
+        <div className="mt-8 grid sm:grid-cols-3 gap-4">
+          {[
+            { n: "1", t: "Pick your gifts", d: "Tap what you'd love from the shelves, or paste any product link — the photo fills in itself." },
+            { n: "2", t: "Share one link", d: "Drop it in the family group. No app for anyone, no signing in, nothing to install." },
+            { n: "3", t: "Friends reserve quietly", d: "Each gift gets one name on it, so nobody shows up with the same perfume." },
+          ].map((s, i) => (
+            <div key={s.n} className="rounded-2xl bg-[var(--surface)] border border-[var(--line)] p-6 text-center">
+              <span
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full font-display text-lg text-white"
+                style={{ background: FESTIVE[i] }}
+              >
+                {s.n}
+              </span>
+              <p className="font-display text-lg mt-3">{s.t}</p>
+              <p className="text-sm text-[var(--muted)] mt-2 leading-relaxed">{s.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* footer */}
+      <footer className="mt-24 border-t border-[var(--line)] bg-[var(--surface)]/60">
+        <div className="max-w-5xl mx-auto px-6 py-12 grid sm:grid-cols-3 gap-8">
+          <div>
+            <p className="font-display text-2xl">{SITE_NAME}</p>
+            <p className="mt-2 text-sm text-[var(--muted)] leading-relaxed">
+              The gift list that ends duplicate gifts. Made with care in India.
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">Start</p>
+            <div className="mt-3 space-y-2 text-sm">
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                className="block hover:text-[var(--accent-deep)]"
+              >
+                Make a list
+              </button>
+              <a href="/my" className="block hover:text-[var(--accent-deep)]">
+                My lists
+              </a>
+              <a href="#how" className="block hover:text-[var(--accent-deep)]">
+                How it works
+              </a>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
+              Good for
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {OCCASIONS.map((o, i) => (
+                <span
+                  key={o.id}
+                  className="text-xs px-2.5 py-1 rounded-full text-white/95"
+                  style={{ background: FESTIVE[i % FESTIVE.length] }}
+                >
+                  {o.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-[var(--line)]">
+          <p className="max-w-5xl mx-auto px-6 py-4 text-xs text-[var(--muted)]">
+            © {new Date().getFullYear()} {SITE_NAME} · free forever · no login needed
+          </p>
+        </div>
       </footer>
 
       {showCustomForm && (
@@ -538,16 +648,21 @@ export default function Home() {
 function Shelf({
   title,
   onSeeAll,
+  dot,
   children,
 }: {
   title: string;
   onSeeAll?: () => void;
+  dot?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="mt-9">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-xl">{title}</h2>
+        <h2 className="font-display text-xl flex items-center gap-2">
+          {dot && <span className="h-2.5 w-2.5 rounded-full inline-block" style={{ background: dot }} />}
+          {title}
+        </h2>
         {onSeeAll && (
           <button
             onClick={onSeeAll}
