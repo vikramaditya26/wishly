@@ -5,19 +5,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { OCCASIONS } from "@/lib/catalog";
 import { SITE_NAME } from "@/lib/config";
-import type { Occasion } from "@/lib/types";
 
 interface SavedBasket {
   shareId: string;
   manageKey: string;
-  hostName: string;
-  occasion: Occasion;
+  hostName: string; // couple display name, e.g. "Aditya & Meera"
   createdAt: number;
 }
 
-const DOTS = ["#c2565e", "#b98a2f", "#6f8f57", "#4f7ea8", "#7a63a8"];
+const GOLD = "#c19a3f";
 
 export default function MyListsPage() {
   const [lists, setLists] = useState<SavedBasket[] | null>(null);
@@ -74,41 +71,39 @@ export default function MyListsPage() {
           {SITE_NAME}
         </Link>
         <h1 className="font-display text-4xl mt-10">
-          Your lists<span className="text-[var(--accent)]">.</span>
+          Your registries<span className="text-[var(--maroon)]">.</span>
         </h1>
         <p className="mt-2 text-sm text-[var(--muted)]">
-          Every list made in this browser, with its private dashboard.
+          Every registry made in this browser, with its private dashboard.
         </p>
 
         {lists === null ? null : lists.length === 0 ? (
           <div className="mt-12 text-center border border-dashed border-[var(--line)] rounded-2xl py-14 px-6">
             <p className="font-display text-xl">Nothing here yet.</p>
             <p className="mt-2 text-sm text-[var(--muted)]">
-              Lists you create on this device will show up here automatically.
+              Registries you create on this device will show up here automatically.
             </p>
             <Link href="/" className="btn-primary inline-block mt-6 px-8 py-3 text-sm">
-              Make your first list
+              Make your first registry
             </Link>
           </div>
         ) : (
           <div className="mt-8 space-y-3">
-            {lists.map((l, i) => {
-              const occ = OCCASIONS.find((o) => o.id === l.occasion);
+            {lists.map((l) => {
               const date = new Date(l.createdAt).toLocaleDateString("en-IN", {
                 day: "numeric",
                 month: "short",
               });
-              const dot = DOTS[i % DOTS.length];
               return (
                 <div
                   key={l.shareId + l.createdAt}
                   className="rounded-2xl bg-[var(--surface)] border border-[var(--line)] overflow-hidden"
                 >
-                  <div className="h-1" style={{ background: dot }} />
+                  <div className="h-1" style={{ background: GOLD }} />
                   <div className="p-4">
                     <div className="flex items-baseline justify-between gap-3">
                       <p className="font-display text-lg truncate">
-                        {l.hostName}&apos;s {occ ? occ.label : "list"}
+                        {l.hostName}&apos;s registry
                       </p>
                       <p className="text-xs text-[var(--muted)] whitespace-nowrap">{date}</p>
                     </div>

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getStore } from "@/lib/store";
-import { OCCASIONS } from "@/lib/catalog";
 import { SITE_NAME } from "@/lib/config";
 import { ShareBox } from "@/components/ShareBox";
 import { ManageList } from "@/components/ManageList";
@@ -8,7 +7,7 @@ import { ManageList } from "@/components/ManageList";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: `Your list · ${SITE_NAME}`,
+  title: `Your registry · ${SITE_NAME}`,
   robots: { index: false, follow: false },
 };
 
@@ -44,15 +43,13 @@ export default async function ManagePage({
     );
   }
 
-  const occ = OCCASIONS.find((o) => o.id === basket.occasion);
+  const couple = basket.partnerTwo ? `${basket.hostName} & ${basket.partnerTwo}` : basket.hostName;
 
   return (
     <main className="min-h-screen px-6 py-14">
       <div className="max-w-lg mx-auto">
         <p className="font-display text-2xl">{SITE_NAME}</p>
-        <h1 className="font-display text-4xl mt-10">
-          Your {occ ? occ.label.toLowerCase() : ""} list
-        </h1>
+        <h1 className="font-display text-4xl mt-10">{couple}&apos;s registry</h1>
 
         <ManageList shareId={basket.shareId} manageKey={key!} initialItems={basket.items} />
 

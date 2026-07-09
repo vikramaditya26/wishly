@@ -1,5 +1,13 @@
 # AGENT.md — read this before touching the code
 
+> **PRODUCT IS NOW WEDDING-ONLY (2026-07-09).** Wishly is a wedding gift
+> registry: two partners, a venue, a wedding date, an invitation-style guest
+> page, and gifts that are for the wedding or married life. Birthday/other
+> occasions, persona filters (for her/him, student/working) and prices were
+> all removed. Palette is maroon/gold/ivory. Real couple photos + a hero
+> video live in `public/wedding/`. See the latest change-log entry for detail.
+
+
 This file is the single source of truth for AI agents (and humans) working on
 this repo. **Rule: whenever you change any file, update the "Change log"
 section at the bottom of this file** (date, what changed, why). If you change
@@ -288,3 +296,22 @@ README for the owner-facing step-by-step.
   action that removes from DB and localStorage, plus a colour accent strip.
   All verified locally against live DB (create→theme→countdown→delete→link
   dies; wrong-key delete rejected 403).
+- **2026-07-09 (WEDDING PIVOT — major)** — Repositioned the whole product as a
+  wedding gift registry. Data: `baskets` gained `partner_two` + `venue`
+  columns (migration run on live DB; also in schema.sql); `host_name` = partner
+  one; `occasion` is always 'wedding' and no longer read. Types dropped
+  Occasion/ForWho/Vibe and item price/emoji. Catalog rebuilt around 5 wedding
+  shelves (Home & Furniture, Decor & Lighting, Kitchen & Dining, For the
+  Couple, Honeymoon & Tech) — all dummyjson photos, no persona filters.
+  THEMES → TEMPLATES (Royal Maroon / Marigold / Rose Petals / Classic Ivory /
+  Mehndi Green), each with a `deep` colour + hero photo from `public/wedding/`.
+  Palette in globals.css is maroon `#7c1d2b` / gold `#c19a3f` / ivory. Home:
+  full-bleed autoplay/muted/loop VIDEO hero (`public/wedding/reel.mp4`), "How
+  it works" ABOVE the gifts (no numbers), gift shelves, Invitation-templates
+  showcase, Resources section (RESOURCES in catalog.ts), full footer. Details
+  step collects both partner names + venue + date + note + template with a live
+  invitation preview. Guest page is now a wedding invitation (template hero
+  photo, "…are getting married", couple names, venue, date, countdown, message,
+  then reservable gifts). Owner photos copied to `public/wedding/`. `/my`,
+  manage page, OG images + metadata reworded to registry/couple. Verified end
+  to end locally against the live DB.

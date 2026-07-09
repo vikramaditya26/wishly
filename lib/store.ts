@@ -12,7 +12,7 @@
 
 import postgres from "postgres";
 import { customAlphabet } from "nanoid";
-import type { Basket, BasketItem, BasketWithSecret, Occasion } from "./types";
+import type { Basket, BasketItem, BasketWithSecret } from "./types";
 
 // URL-friendly, no confusing chars (no 0/O, 1/l).
 const shortId = customAlphabet("23456789abcdefghjkmnpqrstuvwxyz", 10);
@@ -20,7 +20,8 @@ const secretId = customAlphabet("23456789abcdefghjkmnpqrstuvwxyz", 24);
 
 export interface NewBasketInput {
   hostName: string;
-  occasion: Occasion;
+  partnerTwo?: string;
+  venue?: string;
   message: string;
   theme: string;
   eventDate?: string;
@@ -64,7 +65,8 @@ const memoryStore: Store = {
       shareId: shortId(),
       manageKey: secretId(),
       hostName: input.hostName,
-      occasion: input.occasion,
+      partnerTwo: input.partnerTwo,
+      venue: input.venue,
       message: input.message,
       theme: input.theme,
       eventDate: input.eventDate,
@@ -154,9 +156,7 @@ function db() {
 interface ItemRow {
   id: string;
   name: string;
-  emoji: string | null;
   image_url: string | null;
-  price: string | null;
   url: string | null;
   claimed_by: string | null;
 }
@@ -165,9 +165,7 @@ function rowToItem(r: ItemRow): BasketItem {
   return {
     id: r.id,
     name: r.name,
-    emoji: r.emoji ?? undefined,
     imageUrl: r.image_url ?? undefined,
-    price: r.price ?? undefined,
     url: r.url ?? undefined,
     claimedBy: r.claimed_by,
   };
@@ -179,18 +177,17 @@ const postgresStore: Store = {
     const shareId = shortId();
     const manageKey = secretId();
     const [basket] = await sql`
-      insert into baskets (share_id, manage_key, host_name, occasion, message, theme, event_date)
-      values (${shareId}, ${manageKey}, ${input.hostName}, ${input.occasion},
-              ${input.message}, ${input.theme}, ${input.eventDate ?? null})
+      insert into baskets (share_id, manage_key, host_name, partner_two, venue, occasion, message, theme, event_date)
+      values (${shareId}, ${manageKey}, ${input.hostName}, ${input.partnerTwo ?? null},
+              ${input.venue ?? null}, 'wedding', ${input.message}, ${input.theme},
+              ${input.eventDate ?? null})
       returning id, created_at`;
 
     const rows = input.items.map((it, i) => ({
       id: `${shareId}-${it.id}-${i}`,
       basket_id: basket.id,
       name: it.name,
-      emoji: it.emoji ?? null,
       image_url: it.imageUrl ?? null,
-      price: it.price ?? null,
       url: it.url ?? null,
       position: i,
     }));
@@ -200,16 +197,15 @@ const postgresStore: Store = {
       shareId,
       manageKey,
       hostName: input.hostName,
-      occasion: input.occasion,
+      partnerTwo: input.partnerTwo,
+      venue: input.venue,
       message: input.message,
       theme: input.theme,
       eventDate: input.eventDate,
       items: rows.map((r) => ({
         id: r.id,
         name: r.name,
-        emoji: r.emoji ?? undefined,
         imageUrl: r.image_url ?? undefined,
-        price: r.price ?? undefined,
         url: r.url ?? undefined,
         claimedBy: null,
       })),
@@ -221,14 +217,15 @@ const postgresStore: Store = {
     const [basket] = await sql`select * from baskets where share_id = ${shareId}`;
     if (!basket) return null;
     const items = await sql`
-      select id, name, emoji, image_url, price, url, claimed_by
+      select id, name, image_url, url, claimed_by
       from basket_items where basket_id = ${basket.id} order by position`;
     return {
       shareId: basket.share_id,
       hostName: basket.host_name,
-      occasion: basket.occasion,
+      partnerTwo: basket.partner_two ?? undefined,
+      venue: basket.venue ?? undefined,
       message: basket.message ?? "",
-      theme: basket.theme ?? "ivory",
+      theme: basket.theme ?? "royal",
       eventDate: basket.event_date ?? undefined,
       items: (items as unknown as ItemRow[]).map(rowToItem),
       createdAt: new Date(basket.created_at).toISOString(),

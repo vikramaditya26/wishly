@@ -6,10 +6,12 @@ create table if not exists baskets (
   id uuid primary key default gen_random_uuid(),
   share_id text unique not null,
   manage_key text not null,
-  host_name text not null,
-  occasion text not null,
+  host_name text not null,      -- partner one's name
+  partner_two text,             -- partner two's name (weddings)
+  venue text,                   -- where the wedding is
+  occasion text not null,       -- always 'wedding' now
   message text default '',
-  theme text default 'confetti',
+  theme text default 'royal',   -- invitation template id
   event_date text,
   created_at timestamptz default now()
 );

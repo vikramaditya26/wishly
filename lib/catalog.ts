@@ -1,200 +1,122 @@
 // ---------------------------------------------------------------------------
-// The curated gift catalog: 8 categories x 10 products, with real product
-// photos (cdn.dummyjson.com - free, stable product-image CDN; replace with own
-// images later if desired). Prices are indicative INR. "Buy" goes to an
-// affiliate-tagged amazon.in search for the product name, so listings never
-// go stale. To edit the catalog, edit this file - no database involved.
+// Wishly wedding registry catalog. Everything here is something a couple needs
+// FOR the wedding or for married life after it - grouped into shelves. Photos
+// come from cdn.dummyjson.com (free, stable product-image CDN). "Buy" points
+// at an affiliate-tagged amazon.in search so listings never go stale.
 // ---------------------------------------------------------------------------
 
-import type { CatalogProduct, ForWho, Occasion, Vibe } from "./types";
+import type { CatalogProduct } from "./types";
 
-export const OCCASIONS: { id: Occasion; label: string }[] = [
-  { id: "birthday", label: "Birthday" },
-  { id: "wedding", label: "Wedding" },
-  { id: "anniversary", label: "Anniversary" },
-  { id: "housewarming", label: "Housewarming" },
-  { id: "justbecause", label: "Just because" },
+export const CATEGORIES: { id: string; label: string; blurb: string }[] = [
+  { id: "home", label: "Home & Furniture", blurb: "The big pieces for a new home together" },
+  { id: "decor", label: "Decor & Lighting", blurb: "Warm the new nest" },
+  { id: "kitchen", label: "Kitchen & Dining", blurb: "For the first meals as a family" },
+  { id: "couple", label: "For the Couple", blurb: "Watches, scents & keepsakes" },
+  { id: "honeymoon", label: "Honeymoon & Tech", blurb: "For the journey ahead" },
 ];
 
-export const FOR_WHO: { id: ForWho; label: string }[] = [
-  { id: "her", label: "For her" },
-  { id: "him", label: "For him" },
-];
-
-export const VIBES: { id: Vibe; label: string }[] = [
-  { id: "student", label: "Student" },
-  { id: "working", label: "Working" },
-];
-
-export const CATEGORIES: { id: string; label: string }[] = [
-  { id: "beauty", label: "Beauty & Fragrance" },
-  { id: "watches", label: "Watches" },
-  { id: "tech", label: "Tech" },
-  { id: "fashion", label: "Clothing" },
-  { id: "shoes", label: "Shoes" },
-  { id: "accessories", label: "Bags & Jewellery" },
-  { id: "home", label: "Home & Kitchen" },
-  { id: "sports", label: "Sports" },
-];
-
-// Guest-page themes. `deep` drives the ribbon, headline accent and swatches,
-// so picking a colour makes an OBVIOUS difference (earlier tints were so
-// subtle the owner thought the picker was broken).
-export const THEMES: {
+// Invitation templates. `deep` drives the guest-page ribbon, names and accents;
+// `hero` is the background photo on the couple's shared invitation page.
+export const TEMPLATES: {
   id: string;
   label: string;
-  bg: string; // page background
-  tile: string; // product image tile
-  deep: string; // strong accent: ribbon, headings, swatch
+  deep: string;
+  bg: string;
+  tile: string;
+  hero: string;
 }[] = [
-  { id: "ivory", label: "Marigold", bg: "#fbf3e2", tile: "#f5e6c4", deep: "#b98a2f" },
-  { id: "blush", label: "Rose", bg: "#fbecec", tile: "#f5d6d6", deep: "#c2565e" },
-  { id: "sage", label: "Mehendi", bg: "#eff4e9", tile: "#dfe9cf", deep: "#6f8f57" },
-  { id: "sky", label: "Sky", bg: "#ebf2f8", tile: "#d6e5f1", deep: "#4f7ea8" },
-  { id: "lavender", label: "Lavender", bg: "#f2edf8", tile: "#e2d8f1", deep: "#7a63a8" },
+  { id: "royal", label: "Royal Maroon", deep: "#7c1d2b", bg: "#fbf1ea", tile: "#f2e3d2", hero: "/wedding/couple-gold.jpg" },
+  { id: "marigold", label: "Marigold", deep: "#b3721b", bg: "#fdf3e0", tile: "#f6e6c8", hero: "/wedding/pheras.jpg" },
+  { id: "rose", label: "Rose Petals", deep: "#b64760", bg: "#fceef1", tile: "#f6dbe1", hero: "/wedding/hero-petals.jpg" },
+  { id: "classic", label: "Classic Ivory", deep: "#8a7a53", bg: "#f8f5ee", tile: "#ece5d5", hero: "/wedding/silhouette.jpg" },
+  { id: "mehndi", label: "Mehndi Green", deep: "#5f7a4b", bg: "#f2f5ea", tile: "#e4ecd4", hero: "/wedding/agni.jpg" },
 ];
 
 const CDN = "https://cdn.dummyjson.com/product-images";
 
-// Soft persona tags: helps "what should I pick?" filtering without hiding
-// too much. Everything not listed here matches both personas.
-const STUDENT_IDS = new Set([
-  "g5", "g32", "g35", "g36", "g41", "g42", "g43", "g44", "g45", "g46", "g49",
-  "g54", "g59", "g60", "g71", "g72", "g73", "g74", "g75", "g76", "g77", "g78",
-  "g79", "g80",
-]);
-const WORKING_IDS = new Set([
-  "g11", "g12", "g13", "g14", "g15", "g16", "g17", "g18", "g19", "g20", "g23",
-  "g24", "g25", "g47", "g48", "g50", "g52", "g53", "g55", "g61", "g62", "g63",
-  "g64", "g65", "g66", "g67", "g68", "g69", "g70",
-]);
-
-function p(
-  id: string,
-  name: string,
-  imagePath: string,
-  price: number,
-  category: string,
-  occasions: Occasion[],
-  forWho: ForWho,
-  amazonQuery?: string
-): CatalogProduct {
+function p(id: string, name: string, imagePath: string, category: string, amazonQuery?: string): CatalogProduct {
   return {
     id,
     name,
     image: `${CDN}/${imagePath}/thumbnail.webp`,
-    price,
     category,
     amazonQuery: amazonQuery ?? name,
-    occasions,
-    forWho,
-    vibe: STUDENT_IDS.has(id) ? "student" : WORKING_IDS.has(id) ? "working" : "any",
   };
 }
 
-const BDAY: Occasion[] = ["birthday", "anniversary", "justbecause"];
-const DRESSY: Occasion[] = ["birthday", "wedding", "anniversary"];
-const CASUAL: Occasion[] = ["birthday", "justbecause"];
-const HOMEY: Occasion[] = ["wedding", "housewarming", "anniversary"];
-
 export const PRODUCTS: CatalogProduct[] = [
-  // --------------------------- beauty & fragrance --------------------------
-  p("g1", "Lash Princess Mascara", "beauty/essence-mascara-lash-princess", 499, "beauty", BDAY, "her", "essence lash princess mascara"),
-  p("g2", "Eyeshadow Palette", "beauty/eyeshadow-palette-with-mirror", 899, "beauty", BDAY, "her", "eyeshadow palette with mirror"),
-  p("g3", "Compact Face Powder", "beauty/powder-canister", 599, "beauty", BDAY, "her"),
-  p("g4", "Classic Red Lipstick", "beauty/red-lipstick", 699, "beauty", BDAY, "her", "red lipstick matte"),
-  p("g5", "Nail Polish Set", "beauty/red-nail-polish", 399, "beauty", CASUAL, "her", "nail polish set"),
-  p("g6", "Calvin Klein CK One", "fragrances/calvin-klein-ck-one", 3499, "beauty", DRESSY, "anyone", "calvin klein ck one perfume"),
-  p("g7", "Chanel Coco Noir", "fragrances/chanel-coco-noir-eau-de", 9999, "beauty", DRESSY, "her", "chanel coco noir perfume"),
-  p("g8", "Dior J'adore", "fragrances/dior-j'adore", 8499, "beauty", DRESSY, "her", "dior jadore perfume"),
-  p("g9", "Dolce & Gabbana Shine", "fragrances/dolce-shine-eau-de", 6999, "beauty", DRESSY, "her", "dolce gabbana perfume women"),
-  p("g10", "Gucci Bloom", "fragrances/gucci-bloom-eau-de", 7499, "beauty", DRESSY, "her", "gucci bloom perfume"),
+  // ----------------------------- home & furniture --------------------------
+  p("w1", "Upholstered Bed", "furniture/annibale-colombo-bed", "home", "upholstered double bed"),
+  p("w2", "3-Seater Sofa", "furniture/annibale-colombo-sofa", "home", "3 seater sofa set"),
+  p("w3", "Wooden Bedside Table", "furniture/bedside-table-african-cherry", "home", "wooden bedside table"),
+  p("w4", "Accent Armchair", "furniture/knoll-saarinen-executive-conference-chair", "home", "accent armchair"),
+  p("w5", "Vanity with Mirror", "furniture/wooden-bathroom-sink-with-mirror", "home", "dressing table with mirror"),
+  p("w6", "Hanging Swing Chair", "home-decoration/decoration-swing", "home", "indoor hanging swing chair"),
 
-  // -------------------------------- watches --------------------------------
-  p("g11", "Brown Leather Strap Watch", "mens-watches/brown-leather-belt-watch", 2999, "watches", DRESSY, "him", "men leather strap analog watch"),
-  p("g12", "Classic Dress Watch", "mens-watches/longines-master-collection", 6999, "watches", DRESSY, "him", "men dress watch"),
-  p("g13", "Black Dial Leather Watch", "mens-watches/rolex-cellini-date-black-dial", 4999, "watches", DRESSY, "him", "men black dial leather watch"),
-  p("g14", "Moonphase Watch", "mens-watches/rolex-cellini-moonphase", 7999, "watches", DRESSY, "him", "moonphase watch men"),
-  p("g15", "Steel Link Watch", "mens-watches/rolex-datejust", 5999, "watches", DRESSY, "him", "men steel analog watch"),
-  p("g16", "Silver Steel Watch", "womens-watches/iwc-ingenieur-automatic-steel", 6499, "watches", DRESSY, "her", "women silver steel watch"),
-  p("g17", "White Dial Classic Watch", "womens-watches/rolex-cellini-moonphase", 7499, "watches", DRESSY, "her", "women white dial watch"),
-  p("g18", "Two-tone Bracelet Watch", "womens-watches/rolex-datejust-women", 6999, "watches", DRESSY, "her", "women two tone watch"),
-  p("g19", "Gold Watch", "womens-watches/watch-gold-for-women", 4999, "watches", DRESSY, "her", "gold watch for women"),
-  p("g20", "Rose Strap Watch", "womens-watches/women's-wrist-watch", 2999, "watches", DRESSY, "her", "women wrist watch"),
+  // ----------------------------- decor & lighting --------------------------
+  p("w7", "Table Lamp Pair", "home-decoration/table-lamp", "decor", "table lamp set of 2"),
+  p("w8", "Family Photo Frames", "home-decoration/family-tree-photo-frame", "decor", "wall photo frame set"),
+  p("w9", "Decorative Plant", "home-decoration/house-showpiece-plant", "decor", "artificial decor plant"),
+  p("w10", "Ceramic Planter", "home-decoration/plant-pot", "decor", "ceramic planter pot"),
+  p("w11", "Aroma Diffuser", "fragrances/dolce-shine-eau-de", "decor", "reed diffuser home fragrance"),
 
-  // ---------------------------------- tech ---------------------------------
-  p("g21", "Apple iPhone", "smartphones/iphone-5s", 39999, "tech", BDAY, "anyone", "apple iphone"),
-  p("g22", "Apple Watch", "mobile-accessories/apple-watch-series-4-gold", 29999, "tech", BDAY, "anyone", "apple watch"),
-  p("g23", "Apple MacBook", "laptops/apple-macbook-pro-14-inch-space-grey", 119999, "tech", CASUAL, "anyone", "apple macbook"),
-  p("g24", "Apple iPad Mini", "tablets/ipad-mini-2021-starlight", 46999, "tech", CASUAL, "anyone", "apple ipad mini"),
-  p("g25", "Samsung Galaxy Tab", "tablets/samsung-galaxy-tab-s8-plus-grey", 52999, "tech", CASUAL, "anyone", "samsung galaxy tab"),
-  p("g26", "Amazon Echo Speaker", "mobile-accessories/amazon-echo-plus", 8999, "tech", CASUAL, "anyone", "amazon echo"),
-  p("g27", "Apple AirPods", "mobile-accessories/apple-airpods", 11999, "tech", CASUAL, "anyone", "apple airpods"),
-  p("g28", "Apple AirPods Max", "mobile-accessories/apple-airpods-max-silver", 49999, "tech", CASUAL, "anyone", "apple airpods max"),
-  p("g29", "Wireless Charging Pad", "mobile-accessories/apple-airpower-wireless-charger", 1999, "tech", CASUAL, "anyone", "wireless charger"),
-  p("g30", "Apple HomePod Mini", "mobile-accessories/apple-homepod-mini-cosmic-grey", 9999, "tech", CASUAL, "anyone", "apple homepod mini"),
+  // ----------------------------- kitchen & dining --------------------------
+  p("w12", "Microwave Oven", "kitchen-accessories/microwave-oven", "kitchen", "microwave oven"),
+  p("w13", "Mixer & Blender", "kitchen-accessories/boxed-blender", "kitchen", "mixer grinder blender"),
+  p("w14", "Steel Cook Pot Set", "kitchen-accessories/silver-pot-with-glass-cap", "kitchen", "stainless steel cookware set"),
+  p("w15", "Non-stick Pan Set", "kitchen-accessories/pan", "kitchen", "non stick pan set"),
+  p("w16", "Wooden Chopping Board", "kitchen-accessories/chopping-board", "kitchen", "wooden chopping board set"),
+  p("w17", "Mug Tree & Cups", "kitchen-accessories/mug-tree-stand", "kitchen", "coffee mug set with stand"),
+  p("w18", "Masala & Spice Rack", "kitchen-accessories/spice-rack", "kitchen", "masala spice rack organiser"),
+  p("w19", "Serving Tray Set", "kitchen-accessories/tray", "kitchen", "serving tray set"),
 
-  // -------------------------------- clothing -------------------------------
-  p("g31", "Check Shirt", "mens-shirts/blue-&-black-check-shirt", 1299, "fashion", CASUAL, "him", "men check shirt"),
-  p("g32", "Graphic T-shirt", "mens-shirts/gigabyte-aorus-men-tshirt", 799, "fashion", CASUAL, "him", "men graphic tshirt"),
-  p("g33", "Plaid Shirt", "mens-shirts/man-plaid-shirt", 1499, "fashion", CASUAL, "him", "men plaid shirt"),
-  p("g34", "Short Sleeve Shirt", "mens-shirts/man-short-sleeve-shirt", 999, "fashion", CASUAL, "him", "men casual shirt"),
-  p("g35", "Blue Summer Dress", "tops/blue-frock", 1499, "fashion", CASUAL, "her", "women blue dress"),
-  p("g36", "Floral Summer Dress", "tops/girl-summer-dress", 1299, "fashion", CASUAL, "her", "women summer dress"),
-  p("g37", "Grey Midi Dress", "tops/gray-dress", 1699, "fashion", CASUAL, "her", "women midi dress"),
-  p("g38", "Black Evening Gown", "womens-dresses/black-women's-gown", 4999, "fashion", DRESSY, "her", "women black evening gown"),
-  p("g39", "Corset & Skirt Set", "womens-dresses/corset-leather-with-skirt", 3499, "fashion", CASUAL, "her", "corset skirt set women"),
-  p("g40", "Black Corset Dress", "womens-dresses/corset-with-black-skirt", 2999, "fashion", CASUAL, "her", "black corset dress"),
+  // ------------------------------- for the couple --------------------------
+  p("w20", "His Classic Watch", "mens-watches/brown-leather-belt-watch", "couple", "men leather strap watch"),
+  p("w21", "His Steel Watch", "mens-watches/rolex-datejust", "couple", "men steel analog watch"),
+  p("w22", "Her Gold Watch", "womens-watches/watch-gold-for-women", "couple", "gold watch for women"),
+  p("w23", "Her Silver Watch", "womens-watches/iwc-ingenieur-automatic-steel", "couple", "women silver watch"),
+  p("w24", "His Perfume", "fragrances/calvin-klein-ck-one", "couple", "perfume for men"),
+  p("w25", "Her Perfume", "fragrances/gucci-bloom-eau-de", "couple", "perfume for women"),
+  p("w26", "Bridal Earrings", "womens-jewellery/green-crystal-earring", "couple", "bridal earrings set"),
+  p("w27", "Evening Clutch", "womens-bags/prada-women-bag", "couple", "designer clutch bag women"),
 
-  // --------------------------------- shoes ---------------------------------
-  p("g41", "Nike Air Jordan 1", "mens-shoes/nike-air-jordan-1-red-and-black", 12999, "shoes", CASUAL, "him", "nike air jordan 1"),
-  p("g42", "Nike Sports Cleats", "mens-shoes/nike-baseball-cleats", 5999, "shoes", CASUAL, "him", "nike sports shoes men"),
-  p("g43", "Puma Future Rider", "mens-shoes/puma-future-rider-trainers", 6499, "shoes", CASUAL, "him", "puma future rider"),
-  p("g44", "Retro Sneakers", "mens-shoes/sports-sneakers-off-white-&-red", 4999, "shoes", CASUAL, "him", "men retro sneakers"),
-  p("g45", "Court Sneakers", "mens-shoes/sports-sneakers-off-white-red", 4499, "shoes", CASUAL, "him", "men court sneakers"),
-  p("g46", "Cosy Slippers", "womens-shoes/black-&-brown-slipper", 999, "shoes", CASUAL, "her", "women slippers"),
-  p("g47", "Calvin Klein Heels", "womens-shoes/calvin-klein-heel-shoes", 6999, "shoes", DRESSY, "her", "calvin klein heels"),
-  p("g48", "Gold Party Heels", "womens-shoes/golden-shoes-woman", 2999, "shoes", DRESSY, "her", "gold heels women"),
-  p("g49", "Ballet Flats", "womens-shoes/pampi-shoes", 1999, "shoes", CASUAL, "her", "ballet flats women"),
-  p("g50", "Red Heels", "womens-shoes/red-shoes", 2499, "shoes", DRESSY, "her", "red heels women"),
-
-  // ---------------------------- bags & jewellery ---------------------------
-  p("g51", "Blue Handbag", "womens-bags/blue-women's-handbag", 2499, "accessories", DRESSY, "her", "women handbag blue"),
-  p("g52", "Leather Tote Bag", "womens-bags/heshe-women's-leather-bag", 5999, "accessories", DRESSY, "her", "women leather tote bag"),
-  p("g53", "Designer Handbag", "womens-bags/prada-women-bag", 15999, "accessories", DRESSY, "her", "designer handbag women"),
-  p("g54", "White Mini Backpack", "womens-bags/white-faux-leather-backpack", 1999, "accessories", CASUAL, "her", "women mini backpack"),
-  p("g55", "Black Handbag", "womens-bags/women-handbag-black", 2999, "accessories", DRESSY, "her", "women handbag black"),
-  p("g56", "Crystal Earrings", "womens-jewellery/green-crystal-earring", 1499, "accessories", DRESSY, "her", "crystal earrings"),
-  p("g57", "Emerald Drop Earrings", "womens-jewellery/green-oval-earring", 1999, "accessories", DRESSY, "her", "emerald drop earrings"),
-  p("g58", "Tropical Earrings", "womens-jewellery/tropical-earring", 999, "accessories", CASUAL, "her", "statement earrings"),
-  p("g59", "Black Sunglasses", "sunglasses/black-sun-glasses", 1499, "accessories", CASUAL, "anyone", "black sunglasses"),
-  p("g60", "Round Sunglasses", "sunglasses/classic-sun-glasses", 1299, "accessories", CASUAL, "anyone", "round sunglasses"),
-
-  // ------------------------------ home & kitchen ---------------------------
-  p("g61", "Hanging Swing Chair", "home-decoration/decoration-swing", 4999, "home", HOMEY, "anyone", "hanging swing chair"),
-  p("g62", "Photo Frame Collage", "home-decoration/family-tree-photo-frame", 1499, "home", HOMEY, "anyone", "photo frame collage wall"),
-  p("g63", "Decorative Plant", "home-decoration/house-showpiece-plant", 1999, "home", HOMEY, "anyone", "artificial plant decor"),
-  p("g64", "Ceramic Planter", "home-decoration/plant-pot", 899, "home", HOMEY, "anyone", "ceramic planter pot"),
-  p("g65", "Table Lamp", "home-decoration/table-lamp", 2499, "home", HOMEY, "anyone", "bedside table lamp"),
-  p("g66", "Wooden Bedside Table", "furniture/bedside-table-african-cherry", 8999, "home", HOMEY, "anyone", "wooden bedside table"),
-  p("g67", "Designer Desk Chair", "furniture/knoll-saarinen-executive-conference-chair", 13999, "home", HOMEY, "anyone", "designer desk chair"),
-  p("g68", "Microwave Oven", "kitchen-accessories/microwave-oven", 6999, "home", HOMEY, "anyone", "microwave oven"),
-  p("g69", "Blender", "kitchen-accessories/boxed-blender", 2999, "home", HOMEY, "anyone", "blender mixer"),
-  p("g70", "Steel & Glass Cook Pot", "kitchen-accessories/silver-pot-with-glass-cap", 1999, "home", HOMEY, "anyone", "steel cooking pot glass lid"),
-
-  // --------------------------------- sports --------------------------------
-  p("g71", "Cricket Bat", "sports-accessories/cricket-bat", 1999, "sports", CASUAL, "anyone", "cricket bat"),
-  p("g72", "Cricket Ball", "sports-accessories/cricket-ball", 599, "sports", CASUAL, "anyone", "leather cricket ball"),
-  p("g73", "Cricket Helmet", "sports-accessories/cricket-helmet", 2499, "sports", CASUAL, "anyone", "cricket helmet"),
-  p("g74", "Football", "sports-accessories/football", 1299, "sports", CASUAL, "anyone", "football size 5"),
-  p("g75", "Basketball", "sports-accessories/basketball", 999, "sports", CASUAL, "anyone", "basketball"),
-  p("g76", "Volleyball", "sports-accessories/volleyball", 799, "sports", CASUAL, "anyone", "volleyball"),
-  p("g77", "Tennis Racket", "sports-accessories/tennis-racket", 2999, "sports", CASUAL, "anyone", "tennis racket"),
-  p("g78", "Tennis Balls (Pack)", "sports-accessories/tennis-ball", 499, "sports", CASUAL, "anyone", "tennis balls pack"),
-  p("g79", "Feather Shuttlecocks", "sports-accessories/feather-shuttlecock", 699, "sports", CASUAL, "anyone", "feather shuttlecock badminton"),
-  p("g80", "Baseball Glove", "sports-accessories/baseball-glove", 1499, "sports", CASUAL, "anyone", "baseball glove"),
+  // ----------------------------- honeymoon & tech --------------------------
+  p("w28", "Smartphone", "smartphones/iphone-6", "honeymoon", "smartphone"),
+  p("w29", "Tablet", "tablets/ipad-mini-2021-starlight", "honeymoon", "tablet"),
+  p("w30", "Laptop", "laptops/apple-macbook-pro-14-inch-space-grey", "honeymoon", "laptop"),
+  p("w31", "Wireless Earbuds", "mobile-accessories/apple-airpods", "honeymoon", "wireless earbuds"),
+  p("w32", "Over-ear Headphones", "mobile-accessories/apple-airpods-max-silver", "honeymoon", "over ear headphones"),
+  p("w33", "Smart Speaker", "mobile-accessories/amazon-echo-plus", "honeymoon", "smart speaker"),
+  p("w34", "Travel Sunglasses", "sunglasses/black-sun-glasses", "honeymoon", "polarized sunglasses"),
+  p("w35", "Weekender Bag", "womens-bags/white-faux-leather-backpack", "honeymoon", "travel weekender bag"),
 ];
 
-export function formatINR(n: number): string {
-  return `₹${n.toLocaleString("en-IN")}`;
-}
+// Wedding-planning resources shown on the home page. Templates are internal
+// links; the checklists open helpful Google searches for now (real downloadable
+// PDFs can replace these later).
+export const RESOURCES: { title: string; blurb: string; href: string; kind: string }[] = [
+  {
+    title: "Invitation templates",
+    blurb: "Pick a look for your shared invite — Royal, Marigold, Rose & more.",
+    href: "#templates",
+    kind: "Templates",
+  },
+  {
+    title: "Wedding gift checklist",
+    blurb: "The essentials every new home needs, room by room.",
+    href: "https://www.google.com/search?q=wedding+registry+gift+checklist+india",
+    kind: "Checklist",
+  },
+  {
+    title: "Planning timeline",
+    blurb: "A simple month-by-month countdown to the big day.",
+    href: "https://www.google.com/search?q=indian+wedding+planning+timeline+checklist",
+    kind: "Guide",
+  },
+  {
+    title: "Budget planner",
+    blurb: "Keep track of who's covering what, stress-free.",
+    href: "https://www.google.com/search?q=indian+wedding+budget+planner+template",
+    kind: "Planner",
+  },
+];

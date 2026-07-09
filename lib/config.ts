@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------------------
 
 export const SITE_NAME = "Wishly";
-export const SITE_TAGLINE = "gift lists that end duplicate gifts";
+export const SITE_TAGLINE = "wedding registries, without the duplicate gifts";
 
 // Amazon Associates tag. Every amazon.in link on the site (curated products
 // AND links pasted by users) automatically gets this tag appended.

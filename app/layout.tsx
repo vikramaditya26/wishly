@@ -18,21 +18,21 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
-const TITLE = `${SITE_NAME} — the gift list that ends duplicate gifts`;
+const TITLE = `${SITE_NAME} — wedding registries without the duplicate gifts`;
 const DESCRIPTION =
-  "Build a wishlist for your birthday, wedding or new home. Share one link on WhatsApp — friends quietly reserve gifts, so no one buys the same thing twice. Free, no app, no signup.";
+  "Build your wedding gift registry in minutes and share one beautiful invitation link. Guests quietly reserve gifts, so no two people bring the same thing. Free, no app, no signup.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: TITLE,
   description: DESCRIPTION,
   keywords: [
-    "gift list",
-    "wishlist",
-    "gift registry India",
-    "birthday wishlist",
+    "wedding registry India",
     "wedding gift list",
-    "avoid duplicate gifts",
+    "shaadi gift registry",
+    "wedding wishlist",
+    "gift registry",
+    "avoid duplicate wedding gifts",
   ],
   openGraph: {
     title: TITLE,

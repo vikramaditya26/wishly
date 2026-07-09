@@ -30,11 +30,13 @@ export function ClaimGrid({
   initialItems,
   tileColor,
   hostName,
+  accent = "var(--maroon)",
 }: {
   shareId: string;
   initialItems: BasketItem[];
   tileColor: string;
   hostName: string;
+  accent?: string;
 }) {
   const [items, setItems] = useState(initialItems);
   const [claiming, setClaiming] = useState<BasketItem | null>(null);
@@ -177,7 +179,8 @@ export function ClaimGrid({
                       setError("");
                       setClaiming(item);
                     }}
-                    className="mt-2.5 w-full py-1.5 rounded-full text-sm font-medium border border-[var(--accent)]/40 text-[var(--accent-deep)] hover:bg-[var(--accent-soft)]/60 transition"
+                    className="mt-2.5 w-full py-1.5 rounded-full text-sm font-medium border transition hover:bg-black/[0.03]"
+                    style={{ borderColor: accent, color: accent }}
                   >
                     I&apos;ll gift this
                   </button>
@@ -201,7 +204,7 @@ export function ClaimGrid({
             </p>
             <a
               href={`https://wa.me/?text=${encodeURIComponent(
-                `I've reserved "${justClaimed.name}" on ${hostName.split(" ")[0]}'s gift list — that one's mine to bring. Pick yours here: ${
+                `I've reserved "${justClaimed.name}" from ${hostName}'s wedding registry — that one's mine to bring. Pick yours here: ${
                   typeof window !== "undefined" ? `${window.location.origin}/b/${shareId}` : ""
                 }`
               )}`}

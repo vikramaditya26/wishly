@@ -1,48 +1,31 @@
 import Link from "next/link";
 import { getStore } from "@/lib/store";
-import { THEMES } from "@/lib/catalog";
+import { TEMPLATES } from "@/lib/catalog";
 import { SITE_NAME } from "@/lib/config";
 import { ClaimGrid } from "@/components/ClaimGrid";
-import type { Occasion } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ shareId: string }>;
-}) {
+export async function generateMetadata({ params }: { params: Promise<{ shareId: string }> }) {
   const { shareId } = await params;
   const basket = await getStore().getBasket(shareId).catch(() => null);
-  const title = basket
-    ? `${headline(basket.occasion, basket.hostName)} · ${SITE_NAME}`
-    : `Gift list · ${SITE_NAME}`;
+  const couple = basket ? coupleNames(basket.hostName, basket.partnerTwo) : SITE_NAME;
+  const title = basket ? `${couple}'s Wedding Registry · ${SITE_NAME}` : `Wedding Registry · ${SITE_NAME}`;
   const description = basket?.message
     ? basket.message.slice(0, 160)
-    : "Pick a gift and reserve it quietly, so nothing gets bought twice.";
-  return {
-    title,
-    description,
-    robots: { index: false, follow: false },
-    openGraph: { title, description },
-  };
+    : "Reserve a wedding gift for the couple — quietly, so nothing gets bought twice.";
+  return { title, description, robots: { index: false, follow: false }, openGraph: { title, description } };
 }
 
-function headline(occasion: Occasion, name: string): string {
-  switch (occasion) {
-    case "birthday": return `${name}'s Birthday`;
-    case "wedding": return `${name}'s Wedding`;
-    case "anniversary": return `${name}'s Anniversary`;
-    case "housewarming": return `${name}'s New Home`;
-    default: return `${name}'s Wishlist`;
-  }
+function coupleNames(one: string, two?: string): string {
+  return two ? `${one} & ${two}` : one;
 }
 
 function prettyDate(d?: string): string | null {
   if (!d) return null;
   const date = new Date(d + "T00:00:00");
   if (isNaN(date.getTime())) return null;
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "long" });
+  return date.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
 }
 
 function daysToGo(d?: string): string | null {
@@ -50,9 +33,9 @@ function daysToGo(d?: string): string | null {
   const date = new Date(d + "T00:00:00");
   if (isNaN(date.getTime())) return null;
   const days = Math.ceil((date.getTime() - Date.now()) / 86400000);
-  if (days < 0 || days > 90) return null;
-  if (days === 0) return "It's today!";
-  if (days === 1) return "Tomorrow!";
+  if (days < 0 || days > 400) return null;
+  if (days === 0) return "Today";
+  if (days === 1) return "Tomorrow";
   return `${days} days to go`;
 }
 
@@ -63,91 +46,81 @@ export default async function GuestPage({ params }: { params: Promise<{ shareId:
   if (!basket) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-        <h1 className="font-display text-3xl">This list doesn&apos;t exist.</h1>
-        <p className="text-[var(--muted)] mt-3 text-sm">The link may be wrong, or the list was removed.</p>
-        <Link
-          href="/"
-          className="mt-8 px-6 py-2.5 rounded-full bg-[var(--ink)] text-white text-sm font-medium"
-        >
+        <h1 className="font-display text-3xl">This registry doesn&apos;t exist.</h1>
+        <p className="text-[var(--muted)] mt-3 text-sm">The link may be wrong, or it was removed.</p>
+        <Link href="/" className="btn-primary mt-8 px-6 py-2.5 text-sm">
           Make your own on {SITE_NAME}
         </Link>
       </main>
     );
   }
 
-  const theme = THEMES.find((t) => t.id === basket.theme) ?? THEMES[0];
+  const tpl = TEMPLATES.find((t) => t.id === basket.theme) ?? TEMPLATES[0];
+  const couple = coupleNames(basket.hostName, basket.partnerTwo);
   const date = prettyDate(basket.eventDate);
   const countdown = daysToGo(basket.eventDate);
 
   return (
-    <main className="min-h-screen pb-20" style={{ background: theme.bg }}>
-      {/* theme ribbon */}
-      <div className="h-1.5 w-full" style={{ background: theme.deep }} aria-hidden />
-      <div className="max-w-4xl mx-auto px-6 pt-10">
-        <p className="font-display text-xl text-center">{SITE_NAME}</p>
-
-        <div className="text-center mt-12 animate-rise">
-          <p
-            className="text-xs font-medium uppercase tracking-[0.25em]"
-            style={{ color: theme.deep }}
-          >
-            You&apos;re invited to pick a gift
-          </p>
-          <h1 className="font-display text-5xl sm:text-6xl leading-tight mt-4">
-            {headline(basket.occasion, basket.hostName)}
+    <main className="min-h-screen pb-20" style={{ background: tpl.bg }}>
+      {/* invitation hero */}
+      <section className="relative h-[70vh] min-h-[440px] overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={tpl.hero} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${tpl.deep}f5, ${tpl.deep}55 55%, ${tpl.deep}77)` }} />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-6">
+          <p className="text-[11px] uppercase tracking-[0.35em] text-white/80">Together with their families</p>
+          <div className="mt-5 flex items-center gap-4">
+            <span className="h-px w-10 bg-[var(--gold-soft)]" />
+            <p className="text-xs uppercase tracking-[0.3em] text-[var(--gold-soft)]">are getting married</p>
+            <span className="h-px w-10 bg-[var(--gold-soft)]" />
+          </div>
+          <h1 className="font-display text-5xl sm:text-7xl leading-tight mt-5">
+            {basket.hostName}
+            {basket.partnerTwo && (
+              <>
+                <span className="block text-3xl sm:text-4xl my-2 text-[var(--gold-soft)]">&amp;</span>
+                {basket.partnerTwo}
+              </>
+            )}
           </h1>
-          {(date || countdown) && (
-            <div className="mt-4 flex items-center justify-center gap-3">
-              {date && (
-                <span className="text-sm uppercase tracking-widest text-[var(--muted)]">{date}</span>
-              )}
-              {countdown && (
-                <span
-                  className="text-xs font-medium px-3 py-1 rounded-full text-white"
-                  style={{ background: theme.deep }}
-                >
-                  {countdown}
-                </span>
-              )}
+          {(date || basket.venue) && (
+            <div className="mt-6 space-y-1">
+              {date && <p className="text-sm tracking-wide">{date}</p>}
+              {basket.venue && <p className="text-sm text-white/85">{basket.venue}</p>}
             </div>
           )}
-          {basket.message && (
-            <div
-              className="mt-8 max-w-xl mx-auto bg-white/60 rounded-2xl px-6 py-5 border-l-4 text-left"
-              style={{ borderLeftColor: theme.deep }}
-            >
-              <p className="font-display italic text-lg leading-relaxed">
-                &ldquo;{basket.message}&rdquo;
-              </p>
-              <p className="mt-2 text-sm text-[var(--muted)]">— {basket.hostName}</p>
-            </div>
+          {countdown && (
+            <span className="mt-5 text-xs font-medium px-4 py-1.5 rounded-full bg-white/15 border border-white/30 backdrop-blur">
+              {countdown}
+            </span>
           )}
         </div>
+      </section>
 
-        <p className="mt-12 text-center text-sm text-[var(--muted)]">
-          These are gifts {basket.hostName.split(" ")[0]} would love. Reserve one — quietly — so
-          nothing gets bought twice.
-        </p>
+      <div className="max-w-4xl mx-auto px-6">
+        {basket.message && (
+          <div className="max-w-xl mx-auto -mt-8 relative bg-[var(--surface)] rounded-2xl px-6 py-5 border-l-4 shadow-sm" style={{ borderLeftColor: tpl.deep }}>
+            <p className="font-display italic text-lg leading-relaxed">&ldquo;{basket.message}&rdquo;</p>
+            <p className="mt-2 text-sm text-[var(--muted)]">— {couple}</p>
+          </div>
+        )}
 
-        <ClaimGrid
-          shareId={basket.shareId}
-          initialItems={basket.items}
-          tileColor={theme.tile}
-          hostName={basket.hostName}
-        />
+        <div className="text-center mt-14">
+          <p className="text-xs uppercase tracking-[0.3em]" style={{ color: tpl.deep }}>Their registry</p>
+          <div className="gold-rule my-4 max-w-20 mx-auto" />
+          <p className="text-sm text-[var(--muted)] max-w-md mx-auto">
+            Reserve a gift — quietly. Your name goes on it so no one else brings the same thing.
+          </p>
+        </div>
+
+        <ClaimGrid shareId={basket.shareId} initialItems={basket.items} tileColor={tpl.tile} hostName={couple} accent={tpl.deep} />
 
         <footer className="mt-20 pt-8 border-t border-black/5 text-center">
-          <p className="font-display text-lg">Someone you love has a day coming up too.</p>
-          <Link
-            href="/"
-            className="btn-primary inline-block mt-4 px-8 py-2.5 text-sm"
-            style={{ background: theme.deep }}
-          >
-            Make your own list — it&apos;s free
+          <p className="font-display text-lg">Getting married soon too?</p>
+          <Link href="/" className="btn-primary inline-block mt-4 px-8 py-2.5 text-sm" style={{ background: tpl.deep }}>
+            Make your own registry — free
           </Link>
-          <p className="mt-4 text-xs text-[var(--muted)]">
-            Made with {SITE_NAME} — gift lists for every occasion.
-          </p>
+          <p className="mt-4 text-xs text-[var(--muted)]">Made with {SITE_NAME}</p>
         </footer>
       </div>
     </main>

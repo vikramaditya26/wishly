@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { SITE_NAME } from "@/lib/config";
 
 // The card shown when the home page is shared on WhatsApp / social.
-export const alt = `${SITE_NAME} — the gift list that ends duplicate gifts`;
+export const alt = `${SITE_NAME} — wedding registries without the duplicate gifts`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -17,17 +17,17 @@ export default function OgImage() {
           flexDirection: "column",
           justifyContent: "center",
           padding: "80px",
-          background: "#faf7f1",
-          color: "#1c1a17",
+          background: "#fbf6ee",
+          color: "#2a1417",
           fontFamily: "Georgia, serif",
         }}
       >
-        <div style={{ fontSize: 40, letterSpacing: -1 }}>{SITE_NAME}</div>
+        <div style={{ fontSize: 40, letterSpacing: -1, color: "#7c1d2b" }}>{SITE_NAME}</div>
         <div style={{ fontSize: 84, marginTop: 40, lineHeight: 1.1, maxWidth: 950 }}>
-          Never get the same gift twice.
+          Gifts you&apos;ll treasure, not return.
         </div>
-        <div style={{ fontSize: 32, marginTop: 36, color: "#96907f" }}>
-          Pick gifts you&apos;d love · share one link · friends reserve quietly
+        <div style={{ fontSize: 32, marginTop: 36, color: "#9a8574" }}>
+          The wedding registry · one link · every guest brings something different
         </div>
       </div>
     ),

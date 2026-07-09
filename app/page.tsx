@@ -1,26 +1,19 @@
 "use client";
 
-// Wishly's single-page builder. Browsing is shelf-based (a "picked for you"
-// row plus one horizontal row per category) so a big catalog never becomes an
-// endless wall - tap a category name to see all of it as a grid.
+// Wishly is a wedding gift registry. One page: a cinematic video hero, a short
+// "how it works", the gift shelves, invitation templates, planning resources,
+// then the couple's details + share links (as steps on the same page).
 
-import { useEffect, useMemo, useState } from "react";
-import { CATEGORIES, FOR_WHO, OCCASIONS, PRODUCTS, THEMES, VIBES } from "@/lib/catalog";
+import { useMemo, useState } from "react";
+import { CATEGORIES, PRODUCTS, RESOURCES, TEMPLATES } from "@/lib/catalog";
 import { SITE_NAME, amazonSearchLink } from "@/lib/config";
 import { AddGiftModal, NewGift } from "@/components/AddGiftModal";
-import type { BasketItem, CatalogProduct, ForWho, Occasion, Vibe } from "@/lib/types";
+import type { BasketItem } from "@/lib/types";
 
 type Step = "build" | "details" | "done";
 type DraftItem = Omit<BasketItem, "claimedBy">;
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label]));
-
-// hero collage photos (nice-looking products from the catalog)
-const HERO_IMAGES = [
-  "https://cdn.dummyjson.com/product-images/fragrances/gucci-bloom-eau-de/thumbnail.webp",
-  "https://cdn.dummyjson.com/product-images/womens-watches/watch-gold-for-women/thumbnail.webp",
-  "https://cdn.dummyjson.com/product-images/mobile-accessories/apple-airpods-max-silver/thumbnail.webp",
-];
 
 function linkDomain(url?: string): string | null {
   if (!url) return null;
@@ -31,81 +24,34 @@ function linkDomain(url?: string): string | null {
   }
 }
 
-// celebration palette — used for the rotating word, shelf dots and steps
-const FESTIVE = ["#c2565e", "#b98a2f", "#6f8f57", "#4f7ea8", "#7a63a8"];
-const OCCASION_WORDS = ["birthdays", "weddings", "anniversaries", "housewarmings", "farewells"];
-
 export default function Home() {
   const [step, setStep] = useState<Step>("build");
-
-  // filters
-  const [forWho, setForWho] = useState<ForWho | null>(null);
-  const [vibe, setVibe] = useState<Vibe | null>(null);
-  const [category, setCategory] = useState<string>("all");
 
   // basket
   const [picked, setPicked] = useState<Record<string, DraftItem>>({});
   const [showCustomForm, setShowCustomForm] = useState(false);
+  const [category, setCategory] = useState<string>("all");
 
   // details
-  const [occasion, setOccasion] = useState<Occasion>("birthday");
-  const [hostName, setHostName] = useState("");
+  const [nameOne, setNameOne] = useState("");
+  const [nameTwo, setNameTwo] = useState("");
+  const [venue, setVenue] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [message, setMessage] = useState("");
-  const [theme, setTheme] = useState(THEMES[0].id);
+  const [template, setTemplate] = useState(TEMPLATES[0].id);
 
   // result
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ shareId: string; manageKey: string } | null>(null);
 
-  // rotating occasion word in the hero
-  const [wordIdx, setWordIdx] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setWordIdx((i) => (i + 1) % OCCASION_WORDS.length), 2200);
-    return () => clearInterval(t);
-  }, []);
-
-  const matches = useMemo(
-    () =>
-      PRODUCTS.filter(
-        (p) =>
-          (!forWho || p.forWho === forWho || p.forWho === "anyone") &&
-          (!vibe || p.vibe === vibe || p.vibe === "any")
-      ),
-    [forWho, vibe]
-  );
-
-  // a spread across categories, so "picked for you" never feels one-note
-  const pickedForYou = useMemo(() => {
-    const byCat = new Map<string, CatalogProduct[]>();
-    for (const p of matches) {
-      const arr = byCat.get(p.category) ?? [];
-      arr.push(p);
-      byCat.set(p.category, arr);
-    }
-    const out: CatalogProduct[] = [];
-    let added = true;
-    while (out.length < 12 && added) {
-      added = false;
-      for (const arr of byCat.values()) {
-        const next = arr.shift();
-        if (next) {
-          out.push(next);
-          added = true;
-          if (out.length >= 12) break;
-        }
-      }
-    }
-    return out;
-  }, [matches]);
-
-  const customItems = useMemo(
-    () => Object.values(picked).filter((it) => it.id.startsWith("custom-")),
-    [picked]
-  );
   const pickedList = Object.values(picked);
   const count = pickedList.length;
+
+  const shownCategories = useMemo(
+    () => (category === "all" ? CATEGORIES : CATEGORIES.filter((c) => c.id === category)),
+    [category]
+  );
 
   function toggleProduct(id: string) {
     setPicked((prev) => {
@@ -114,12 +60,7 @@ export default function Home() {
         delete next[id];
       } else {
         const p = PRODUCTS.find((x) => x.id === id)!;
-        next[id] = {
-          id: p.id,
-          name: p.name,
-          imageUrl: p.image,
-          url: amazonSearchLink(p.amazonQuery),
-        };
+        next[id] = { id: p.id, name: p.name, imageUrl: p.image, url: amazonSearchLink(p.amazonQuery) };
       }
       return next;
     });
@@ -139,6 +80,10 @@ export default function Home() {
     setShowCustomForm(false);
   }
 
+  function startRegistry() {
+    document.getElementById("gifts")?.scrollIntoView({ behavior: "smooth" });
+  }
+
   async function createBasket() {
     setBusy(true);
     setError("");
@@ -147,10 +92,11 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          hostName,
-          occasion,
+          hostName: nameOne,
+          partnerTwo: nameTwo,
+          venue,
           message,
-          theme,
+          theme: template,
           eventDate,
           items: pickedList,
         }),
@@ -161,7 +107,12 @@ export default function Home() {
       setStep("done");
       try {
         const mine = JSON.parse(localStorage.getItem("wishly-my-baskets") || "[]");
-        mine.push({ shareId: data.shareId, manageKey: data.manageKey, hostName, occasion, createdAt: Date.now() });
+        mine.push({
+          shareId: data.shareId,
+          manageKey: data.manageKey,
+          hostName: nameTwo ? `${nameOne} & ${nameTwo}` : nameOne,
+          createdAt: Date.now(),
+        });
         localStorage.setItem("wishly-my-baskets", JSON.stringify(mine));
       } catch {}
     } catch (e) {
@@ -175,16 +126,16 @@ export default function Home() {
   if (step === "done" && result) {
     return (
       <main className="min-h-screen px-6 py-20">
-        <div className="max-w-lg mx-auto animate-rise">
+        <div className="max-w-lg mx-auto animate-rise text-center">
           <p className="font-display text-2xl">{SITE_NAME}</p>
-          <h1 className="font-display text-4xl mt-10">
-            Your list is live<span className="text-[var(--accent)]">.</span>
-          </h1>
+          <div className="gold-rule my-6 max-w-24 mx-auto" />
+          <h1 className="font-display text-4xl">Your registry is live.</h1>
           <p className="mt-3 text-[15px] text-[var(--muted)]">
-            Send this link to friends and family. They&apos;ll reserve gifts quietly — you just wait.
+            Share this link on your wedding WhatsApp group. Guests reserve gifts quietly — no two
+            people bring the same thing.
           </p>
 
-          <div className="mt-8">
+          <div className="mt-8 text-left">
             <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">Share link</p>
             <CopyRow path={`/b/${result.shareId}`} />
             <WhatsAppButton path={`/b/${result.shareId}`} />
@@ -194,32 +145,12 @@ export default function Home() {
             href={`/manage/${result.shareId}?key=${result.manageKey}`}
             className="btn-primary block text-center w-full py-3 text-[15px] mt-8"
           >
-            Open my dashboard →
+            Open our dashboard →
           </a>
-          <p className="mt-2 text-xs text-[var(--muted)] text-center">
-            Watch reservations come in, add or remove gifts anytime.
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            See who reserved what, add or remove gifts anytime. Find it later under{" "}
+            <a href="/my" className="underline underline-offset-2">My registries</a>.
           </p>
-
-          <div className="mt-10 border-t border-[var(--line)] pt-6">
-            <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
-              Private link — for you only
-            </p>
-            <p className="mt-1.5 text-sm text-[var(--muted)]">
-              See who reserved what, and add or remove gifts anytime. You&apos;ll always find it under{" "}
-              <a href="/my" className="underline underline-offset-2 hover:text-[var(--ink)]">
-                My lists
-              </a>{" "}
-              on this device — but keep a copy somewhere safe too.
-            </p>
-            <CopyRow path={`/manage/${result.shareId}?key=${result.manageKey}`} />
-          </div>
-
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-12 text-sm text-[var(--muted)] underline underline-offset-4"
-          >
-            Make another list
-          </button>
         </div>
       </main>
     );
@@ -227,104 +158,84 @@ export default function Home() {
 
   // --------------------------------------------------------------- details
   if (step === "details") {
+    const tpl = TEMPLATES.find((t) => t.id === template) ?? TEMPLATES[0];
     return (
       <main className="min-h-screen px-6 py-16">
         <div className="max-w-lg mx-auto animate-rise">
-          <button
-            onClick={() => setStep("build")}
-            className="text-sm text-[var(--muted)] hover:text-[var(--ink)]"
-          >
+          <button onClick={() => setStep("build")} className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
             ← Back to gifts
           </button>
-          <h1 className="font-display text-4xl mt-6">
-            Almost there<span className="text-[var(--accent)]">.</span>
-          </h1>
-
-          {/* your picks, with photos */}
-          <div className="mt-6 flex gap-2 overflow-x-auto pb-1">
-            {pickedList.map((it) => (
-              <div
-                key={it.id}
-                className="shrink-0 h-16 w-16 rounded-xl bg-[var(--tile)] border border-[var(--line)] flex items-center justify-center overflow-hidden"
-                title={it.name}
-              >
-                {it.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={it.imageUrl} alt={it.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
-                ) : (
-                  <span className="font-display text-xl text-[var(--muted)]">
-                    {it.name.charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+          <h1 className="font-display text-4xl mt-6">Your invitation.</h1>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            This is what guests see when they open your link.
+          </p>
 
           <div className="mt-7 space-y-6">
-            <Field label="The occasion">
-              <div className="flex flex-wrap gap-2 pt-1">
-                {OCCASIONS.map((o) => (
-                  <Chip key={o.id} active={occasion === o.id} onClick={() => setOccasion(o.id)}>
-                    {o.label}
-                  </Chip>
-                ))}
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Partner one">
+                <input value={nameOne} onChange={(e) => setNameOne(e.target.value)} placeholder="Aditya" maxLength={60} className="input" />
+              </Field>
+              <Field label="Partner two">
+                <input value={nameTwo} onChange={(e) => setNameTwo(e.target.value)} placeholder="Meera" maxLength={60} className="input" />
+              </Field>
+            </div>
+            <Field label="Venue / city" optional>
+              <input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Taj Palace, New Delhi" maxLength={120} className="input" />
             </Field>
-            <Field label="Your name">
-              <input
-                value={hostName}
-                onChange={(e) => setHostName(e.target.value)}
-                placeholder="Aditya"
-                maxLength={60}
-                className="input"
-              />
-            </Field>
-            <Field label="Date" optional>
-              <input
-                type="date"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                className="input"
-              />
+            <Field label="Wedding date" optional>
+              <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="input" />
             </Field>
             <Field label="A note for your guests" optional>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="No pressure to buy anything — your presence is more than enough."
+                placeholder="Your blessings are the greatest gift — but if you'd like to give something, here's what would mean the world to us."
                 maxLength={500}
                 rows={3}
                 className="input resize-none"
               />
             </Field>
-            <Field label="Page colour">
-              <div className="flex gap-3 pt-1">
-                {THEMES.map((t) => (
+            <Field label="Invitation template">
+              <div className="mt-1 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {TEMPLATES.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => setTheme(t.id)}
-                    title={t.label}
-                    aria-label={t.label}
-                    className={`h-9 w-9 rounded-full border-2 transition ${
-                      theme === t.id
-                        ? "border-[var(--ink)] ring-2 ring-[var(--ink)] ring-offset-2 ring-offset-[var(--bg)] scale-110"
-                        : "border-white/60"
+                    onClick={() => setTemplate(t.id)}
+                    className={`relative rounded-xl overflow-hidden border-2 transition ${
+                      template === t.id ? "border-[var(--maroon)] scale-[1.02]" : "border-transparent"
                     }`}
-                    style={{ background: t.deep }}
-                  />
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={t.hero} alt={t.label} className="h-20 w-full object-cover" />
+                    <span className="absolute inset-x-0 bottom-0 text-[11px] font-medium text-white py-1" style={{ background: `${t.deep}dd` }}>
+                      {t.label}
+                    </span>
+                  </button>
                 ))}
               </div>
             </Field>
           </div>
 
-          {error && <p className="mt-5 text-sm text-[var(--accent-deep)]">{error}</p>}
+          {/* live preview */}
+          <div className="mt-8 rounded-2xl overflow-hidden border border-[var(--line)]">
+            <div className="relative h-40">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={tpl.hero} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${tpl.deep}f2, ${tpl.deep}44)` }} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4">
+                <p className="text-[10px] uppercase tracking-[0.3em]">Together with their families</p>
+                <p className="font-display text-2xl mt-1">
+                  {nameOne || "Partner one"} <span className="text-[var(--gold-soft)]">&amp;</span> {nameTwo || "Partner two"}
+                </p>
+                {venue && <p className="text-xs mt-1 opacity-90">{venue}</p>}
+              </div>
+            </div>
+          </div>
 
-          <button
-            onClick={createBasket}
-            disabled={busy || !hostName.trim()}
-            className="btn-primary mt-9 w-full py-3.5 text-[15px]"
-          >
-            {busy ? "Creating…" : "Create my list"}
+          {error && <p className="mt-5 text-sm text-[var(--maroon-deep)]">{error}</p>}
+
+          <button onClick={createBasket} disabled={busy || !nameOne.trim()} className="btn-primary mt-8 w-full py-3.5 text-[15px]">
+            {busy ? "Creating…" : "Create our registry"}
           </button>
         </div>
       </main>
@@ -332,113 +243,94 @@ export default function Home() {
   }
 
   // ----------------------------------------------------------------- build
-  const showShelves = category === "all";
-  const gridItems = showShelves ? [] : matches.filter((p) => p.category === category);
-
   return (
-    <main className="min-h-screen pb-32">
-      <header className="max-w-5xl mx-auto px-6 pt-8 flex items-baseline justify-between">
-        <span className="font-display text-2xl">{SITE_NAME}</span>
-        <a
-          href="/my"
-          className="text-sm text-[var(--muted)] hover:text-[var(--accent-deep)] underline-offset-4 hover:underline"
+    <main className="min-h-screen">
+      {/* video hero */}
+      <section className="relative h-[86vh] min-h-[520px] w-full overflow-hidden">
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="/wedding/hero-petals.jpg"
         >
-          My lists
-        </a>
-      </header>
+          <source src="/wedding/reel.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/70" />
 
-      {/* hero with a small product collage */}
-      <section className="max-w-5xl mx-auto px-6 pt-14 pb-10 relative">
-        {/* soft celebration blobs */}
-        <div
-          aria-hidden
-          className="absolute -top-10 right-10 h-56 w-56 rounded-full opacity-25 blur-3xl pointer-events-none"
-          style={{ background: "#e8a06a" }}
-        />
-        <div
-          aria-hidden
-          className="absolute top-24 -left-16 h-44 w-44 rounded-full opacity-20 blur-3xl pointer-events-none"
-          style={{ background: "#c2565e" }}
-        />
-        <div className="relative">
-          <h1 className="font-display text-5xl sm:text-6xl leading-[1.08] max-w-2xl">
-            Get gifts you&apos;ll{" "}
-            <em className="text-[var(--accent)] not-italic font-display italic">actually</em> love.
-          </h1>
-          <p className="font-display italic text-2xl mt-4 h-8">
-            <span
-              key={wordIdx}
-              className="animate-rise inline-block"
-              style={{ color: FESTIVE[wordIdx % FESTIVE.length] }}
-            >
-              for {OCCASION_WORDS[wordIdx]}
-            </span>
-          </p>
-          <p className="mt-4 text-lg text-[var(--muted)] max-w-xl">
-            Build your wishlist in a minute and share one link. Friends quietly reserve gifts —
-            so nothing gets bought twice.
-          </p>
+        <div className="absolute inset-0 flex flex-col">
+          <header className="flex items-center justify-between px-6 py-6 text-white">
+            <span className="font-display text-2xl">{SITE_NAME}</span>
+            <a href="/my" className="text-sm text-white/90 hover:text-white underline-offset-4 hover:underline">
+              My registries
+            </a>
+          </header>
 
-          <div className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 gap-0" aria-hidden>
-            {HERO_IMAGES.map((src, i) => (
-              <div
-                key={src}
-                className="h-28 w-28 rounded-2xl bg-[var(--tile)] border border-[var(--line)] shadow-md shadow-black/5 flex items-center justify-center p-3"
-                style={{
-                  transform: `rotate(${[-7, 4, -3][i]}deg) translateY(${[8, -10, 6][i]}px)`,
-                  marginLeft: i === 0 ? 0 : -14,
-                  zIndex: 3 - i,
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt="" className="max-h-full max-w-full object-contain mix-blend-multiply" />
-              </div>
-            ))}
+          <div className="flex-1 flex flex-col items-center justify-center text-center text-white px-6 animate-fadein">
+            <p className="text-xs uppercase tracking-[0.35em] text-[var(--gold-soft)]">The wedding registry</p>
+            <h1 className="font-display text-5xl sm:text-7xl leading-[1.05] mt-4 max-w-3xl">
+              Gifts you&apos;ll treasure,
+              <br />
+              not return.
+            </h1>
+            <p className="mt-5 text-lg text-white/90 max-w-xl">
+              Make one beautiful list for your wedding. Share a single link. Every guest brings
+              something different — nothing doubles up.
+            </p>
+            <button onClick={startRegistry} className="btn-primary mt-8 px-9 py-3.5 text-[15px]">
+              Start your registry
+            </button>
           </div>
         </div>
       </section>
 
-      {/* builder */}
-      <section className="max-w-5xl mx-auto px-6">
-        <div className="border-t border-[var(--line)] pt-7">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs uppercase tracking-widest text-[var(--muted)] mr-1">
-              Gifting for
-            </span>
-            {FOR_WHO.map((f) => (
-              <Chip key={f.id} active={forWho === f.id} onClick={() => setForWho(forWho === f.id ? null : f.id)}>
-                {f.label}
-              </Chip>
-            ))}
-            <span className="mx-1.5 h-4 w-px bg-[var(--line)]" />
-            {VIBES.map((v) => (
-              <Chip key={v.id} active={vibe === v.id} onClick={() => setVibe(vibe === v.id ? null : v.id)}>
-                {v.label}
-              </Chip>
-            ))}
-            <button
-              onClick={() => setShowCustomForm(true)}
-              className="ml-auto px-4 py-1.5 rounded-full text-sm font-medium bg-[var(--accent-soft)] text-[var(--accent-deep)] border border-[var(--accent)]/30 hover:bg-[var(--accent)]/15 transition"
-            >
-              + Add your own
-            </button>
-          </div>
+      {/* how it works — above the gifts, no numbers */}
+      <section className="max-w-5xl mx-auto px-6 py-16 text-center">
+        <p className="text-xs uppercase tracking-[0.3em] text-[var(--gold)]">How it works</p>
+        <div className="gold-rule my-5 max-w-20 mx-auto" />
+        <div className="grid sm:grid-cols-3 gap-8 mt-8 text-left">
+          {[
+            { t: "Pick your gifts", d: "Choose from wedding essentials — home, kitchen, keepsakes — or add anything from Amazon, Flipkart or Myntra by pasting a link." },
+            { t: "Share one invite", d: "Get a beautiful invitation page with your names and a single link to drop in the family WhatsApp group." },
+            { t: "Guests reserve quietly", d: "Each gift gets exactly one name on it — so nobody arrives with the same dinner set or the same blender." },
+          ].map((s) => (
+            <div key={s.t}>
+              <p className="font-display text-xl">{s.t}</p>
+              <p className="text-sm text-[var(--muted)] mt-2 leading-relaxed">{s.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-          <div className="mt-4 flex gap-4 overflow-x-auto pb-1 -mx-6 px-6">
-            <Tab active={category === "all"} onClick={() => setCategory("all")}>
-              Browse all
-            </Tab>
-            {CATEGORIES.map((c) => (
-              <Tab key={c.id} active={category === c.id} onClick={() => setCategory(c.id)}>
-                {c.label}
-              </Tab>
-            ))}
+      {/* gifts */}
+      <section id="gifts" className="max-w-5xl mx-auto px-6 pb-28">
+        <div className="flex items-baseline justify-between border-t border-[var(--line)] pt-8">
+          <div>
+            <h2 className="font-display text-3xl">Build your registry</h2>
+            <p className="text-sm text-[var(--muted)] mt-1">Tap to add. Everything a new home needs.</p>
           </div>
+          <button
+            onClick={() => setShowCustomForm(true)}
+            className="btn-gold px-4 py-2 text-sm whitespace-nowrap"
+          >
+            + Add your own
+          </button>
+        </div>
+
+        {/* category filter */}
+        <div className="mt-5 flex gap-4 overflow-x-auto pb-1 -mx-6 px-6">
+          <Tab active={category === "all"} onClick={() => setCategory("all")}>All</Tab>
+          {CATEGORIES.map((c) => (
+            <Tab key={c.id} active={category === c.id} onClick={() => setCategory(c.id)}>
+              {c.label}
+            </Tab>
+          ))}
         </div>
 
         {/* your picks */}
         {count > 0 && (
-          <Shelf title={`Your picks · ${count}`}>
+          <Shelf title={`Your registry · ${count}`} accent>
             {pickedList.map((it) => (
               <ShelfCard
                 key={it.id}
@@ -459,21 +351,12 @@ export default function Home() {
           </Shelf>
         )}
 
-        {showShelves ? (
-          <>
-            <Shelf
-              title={
-                forWho || vibe
-                  ? `Picked for ${[
-                      forWho ? FOR_WHO.find((f) => f.id === forWho)?.label.replace("For ", "") : null,
-                      vibe ? VIBES.find((v) => v.id === vibe)?.label.toLowerCase() : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}`
-                  : "Popular picks"
-              }
-            >
-              {pickedForYou.map((p) => (
+        {shownCategories.map((c) => {
+          const items = PRODUCTS.filter((p) => p.category === c.id);
+          if (items.length === 0) return null;
+          return (
+            <Shelf key={c.id} title={c.label} blurb={c.blurb}>
+              {items.map((p) => (
                 <ShelfCard
                   key={p.id}
                   image={p.image}
@@ -485,131 +368,78 @@ export default function Home() {
                 />
               ))}
             </Shelf>
-
-            {CATEGORIES.map((c, ci) => {
-              const items = matches.filter((p) => p.category === c.id);
-              if (items.length === 0) return null;
-              return (
-                <Shelf
-                  key={c.id}
-                  title={c.label}
-                  dot={FESTIVE[ci % FESTIVE.length]}
-                  onSeeAll={() => {
-                    setCategory(c.id);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                >
-                  {items.map((p) => (
-                    <ShelfCard
-                      key={p.id}
-                      image={p.image}
-                      name={p.name}
-                      sub={CATEGORY_LABEL[p.category]}
-                      added={!!picked[p.id]}
-                      actionLabel={picked[p.id] ? "Added ✓" : "Add"}
-                      onAction={() => toggleProduct(p.id)}
-                    />
-                  ))}
-                </Shelf>
-              );
-            })}
-          </>
-        ) : (
-          <>
-            <div className="mt-8 flex items-baseline justify-between">
-              <h2 className="font-display text-2xl">{CATEGORY_LABEL[category]}</h2>
-              <button
-                onClick={() => setCategory("all")}
-                className="text-sm text-[var(--muted)] hover:text-[var(--ink)] underline underline-offset-4"
-              >
-                ← Browse all
-              </button>
-            </div>
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {gridItems.map((p) => (
-                <GridCard
-                  key={p.id}
-                  image={p.image}
-                  name={p.name}
-                  sub={CATEGORY_LABEL[p.category]}
-                  added={!!picked[p.id]}
-                  actionLabel={picked[p.id] ? "Added ✓" : "Add"}
-                  onAction={() => toggleProduct(p.id)}
-                />
-              ))}
-            </div>
-            {gridItems.length === 0 && (
-              <p className="text-center text-[var(--muted)] mt-16 text-sm">
-                Nothing matches here — try removing a filter.
-              </p>
-            )}
-          </>
-        )}
+          );
+        })}
       </section>
 
-      {/* how it works */}
-      <section id="how" className="max-w-5xl mx-auto px-6 mt-24">
-        <h2 className="font-display text-3xl text-center">
-          How it works<span className="text-[var(--accent)]">.</span>
-        </h2>
-        <div className="mt-8 grid sm:grid-cols-3 gap-4">
-          {[
-            { n: "1", t: "Pick your gifts", d: "Tap what you'd love from the shelves, or paste any product link — the photo fills in itself." },
-            { n: "2", t: "Share one link", d: "Drop it in the family group. No app for anyone, no signing in, nothing to install." },
-            { n: "3", t: "Friends reserve quietly", d: "Each gift gets one name on it, so nobody shows up with the same perfume." },
-          ].map((s, i) => (
-            <div key={s.n} className="rounded-2xl bg-[var(--surface)] border border-[var(--line)] p-6 text-center">
-              <span
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full font-display text-lg text-white"
-                style={{ background: FESTIVE[i] }}
-              >
-                {s.n}
-              </span>
-              <p className="font-display text-lg mt-3">{s.t}</p>
-              <p className="text-sm text-[var(--muted)] mt-2 leading-relaxed">{s.d}</p>
-            </div>
+      {/* templates */}
+      <section id="templates" className="bg-[var(--surface)]/60 border-y border-[var(--line)]">
+        <div className="max-w-5xl mx-auto px-6 py-16">
+          <p className="text-xs uppercase tracking-[0.3em] text-[var(--gold)] text-center">Invitation templates</p>
+          <h2 className="font-display text-3xl text-center mt-3">Set the mood for your day</h2>
+          <p className="text-sm text-[var(--muted)] text-center mt-2 max-w-md mx-auto">
+            Your gift page comes wrapped in a template that matches your wedding — pick one when you
+            add your details.
+          </p>
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {TEMPLATES.map((t) => (
+              <div key={t.id} className="rounded-2xl overflow-hidden border border-[var(--line)]">
+                <div className="relative h-40">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={t.hero} alt={t.label} className="absolute inset-0 h-full w-full object-cover" />
+                  <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${t.deep}e6, transparent)` }} />
+                  <p className="absolute bottom-2 inset-x-0 text-center text-white text-sm font-medium">{t.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* resources */}
+      <section className="max-w-5xl mx-auto px-6 py-16">
+        <p className="text-xs uppercase tracking-[0.3em] text-[var(--gold)] text-center">For the planning</p>
+        <h2 className="font-display text-3xl text-center mt-3">Everything else you&apos;ll need</h2>
+        <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {RESOURCES.map((r) => (
+            <a
+              key={r.title}
+              href={r.href}
+              target={r.href.startsWith("http") ? "_blank" : undefined}
+              rel="noopener noreferrer"
+              className="rounded-2xl bg-[var(--surface)] border border-[var(--line)] p-5 hover:border-[var(--gold)] transition"
+            >
+              <span className="text-[11px] font-medium uppercase tracking-widest text-[var(--gold)]">{r.kind}</span>
+              <p className="font-display text-lg mt-2">{r.title}</p>
+              <p className="text-sm text-[var(--muted)] mt-1.5 leading-relaxed">{r.blurb}</p>
+            </a>
           ))}
         </div>
       </section>
 
       {/* footer */}
-      <footer className="mt-24 border-t border-[var(--line)] bg-[var(--surface)]/60">
+      <footer className="border-t border-[var(--line)] bg-[var(--surface)]/60">
         <div className="max-w-5xl mx-auto px-6 py-12 grid sm:grid-cols-3 gap-8">
           <div>
             <p className="font-display text-2xl">{SITE_NAME}</p>
             <p className="mt-2 text-sm text-[var(--muted)] leading-relaxed">
-              The gift list that ends duplicate gifts. Made with care in India.
+              Wedding registries without the duplicate gifts. Made with love in India.
             </p>
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">Start</p>
             <div className="mt-3 space-y-2 text-sm">
-              <button
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                className="block hover:text-[var(--accent-deep)]"
-              >
-                Make a list
-              </button>
-              <a href="/my" className="block hover:text-[var(--accent-deep)]">
-                My lists
-              </a>
-              <a href="#how" className="block hover:text-[var(--accent-deep)]">
-                How it works
-              </a>
+              <button onClick={startRegistry} className="block hover:text-[var(--maroon)]">Build a registry</button>
+              <a href="/my" className="block hover:text-[var(--maroon)]">My registries</a>
+              <a href="#templates" className="block hover:text-[var(--maroon)]">Templates</a>
             </div>
           </div>
           <div>
-            <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
-              Good for
-            </p>
+            <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">Good for</p>
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {OCCASIONS.map((o, i) => (
-                <span
-                  key={o.id}
-                  className="text-xs px-2.5 py-1 rounded-full text-white/95"
-                  style={{ background: FESTIVE[i % FESTIVE.length] }}
-                >
-                  {o.label}
+              {["Weddings", "Engagements", "Receptions", "New homes"].map((x) => (
+                <span key={x} className="text-xs px-2.5 py-1 rounded-full text-white/95" style={{ background: "var(--maroon)" }}>
+                  {x}
                 </span>
               ))}
             </div>
@@ -622,18 +452,13 @@ export default function Home() {
         </div>
       </footer>
 
-      {showCustomForm && (
-        <AddGiftModal onAdd={addCustom} onClose={() => setShowCustomForm(false)} />
-      )}
+      {showCustomForm && <AddGiftModal onAdd={addCustom} onClose={() => setShowCustomForm(false)} />}
 
       {/* sticky continue bar */}
       {count > 0 && (
         <div className="fixed bottom-0 inset-x-0 z-40 p-4">
           <div className="max-w-5xl mx-auto flex justify-center">
-            <button
-              onClick={() => setStep("details")}
-              className="btn-primary px-10 py-3.5 text-[15px] shadow-xl shadow-black/15"
-            >
+            <button onClick={() => setStep("details")} className="btn-primary px-10 py-3.5 text-[15px] shadow-xl shadow-black/20">
               Continue — {count} gift{count > 1 ? "s" : ""}
             </button>
           </div>
@@ -647,39 +472,28 @@ export default function Home() {
 
 function Shelf({
   title,
-  onSeeAll,
-  dot,
+  blurb,
+  accent,
   children,
 }: {
   title: string;
-  onSeeAll?: () => void;
-  dot?: string;
+  blurb?: string;
+  accent?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="mt-9">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-xl flex items-center gap-2">
-          {dot && <span className="h-2.5 w-2.5 rounded-full inline-block" style={{ background: dot }} />}
-          {title}
-        </h2>
-        {onSeeAll && (
-          <button
-            onClick={onSeeAll}
-            className="text-sm text-[var(--muted)] hover:text-[var(--accent-deep)]"
-          >
-            See all →
-          </button>
-        )}
-      </div>
-      <div className="mt-3 flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 snap-x">
-        {children}
-      </div>
+      <h3 className="font-display text-xl flex items-center gap-2">
+        {accent && <span className="h-2.5 w-2.5 rounded-full inline-block" style={{ background: "var(--gold)" }} />}
+        {title}
+      </h3>
+      {blurb && <p className="text-sm text-[var(--muted)] mt-0.5">{blurb}</p>}
+      <div className="mt-3 flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 snap-x">{children}</div>
     </div>
   );
 }
 
-function CardBody({
+function ShelfCard({
   image,
   name,
   sub,
@@ -695,20 +509,17 @@ function CardBody({
   onAction: () => void;
 }) {
   return (
-    <>
+    <div
+      className={`snap-start shrink-0 w-40 rounded-2xl bg-[var(--surface)] overflow-hidden border ${
+        added ? "border-2 border-[var(--maroon)]/50" : "border-[var(--line)]"
+      }`}
+    >
       <div className="aspect-square bg-[var(--tile)] p-4 flex items-center justify-center">
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={image}
-            alt={name}
-            loading="lazy"
-            className="max-h-full max-w-full object-contain mix-blend-multiply"
-          />
+          <img src={image} alt={name} loading="lazy" className="max-h-full max-w-full object-contain mix-blend-multiply" />
         ) : (
-          <span className="font-display text-3xl text-[var(--muted)]">
-            {name.charAt(0).toUpperCase()}
-          </span>
+          <span className="font-display text-3xl text-[var(--muted)]">{name.charAt(0).toUpperCase()}</span>
         )}
       </div>
       <div className="p-2.5">
@@ -717,81 +528,22 @@ function CardBody({
         <button
           onClick={onAction}
           className={`mt-2 w-full py-1.5 rounded-full text-[13px] font-medium border transition ${
-            added
-              ? "bg-[var(--ink)] text-white border-[var(--ink)]"
-              : "border-[var(--accent)]/40 text-[var(--accent-deep)] hover:bg-[var(--accent-soft)]/60"
+            added ? "bg-[var(--maroon)] text-white border-[var(--maroon)]" : "border-[var(--gold)] text-[var(--maroon-deep)] hover:bg-[var(--gold)]/10"
           }`}
         >
           {actionLabel}
         </button>
       </div>
-    </>
-  );
-}
-
-function ShelfCard(props: Parameters<typeof CardBody>[0]) {
-  return (
-    <div
-      className={`snap-start shrink-0 w-40 rounded-2xl bg-[var(--surface)] overflow-hidden border ${
-        props.added ? "border-2 border-[var(--accent)]/50" : "border-[var(--line)]"
-      }`}
-    >
-      <CardBody {...props} />
     </div>
   );
 }
 
-function GridCard(props: Parameters<typeof CardBody>[0]) {
-  return (
-    <div
-      className={`rounded-2xl bg-[var(--surface)] overflow-hidden border ${
-        props.added ? "border-2 border-[var(--accent)]/50" : "border-[var(--line)]"
-      }`}
-    >
-      <CardBody {...props} />
-    </div>
-  );
-}
-
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-1.5 rounded-full text-sm font-medium border transition ${
-        active
-          ? "bg-[var(--ink)] text-white border-[var(--ink)]"
-          : "bg-transparent text-[var(--ink)] border-[var(--line)] hover:border-[var(--ink)]/50"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Tab({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function Tab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       onClick={onClick}
       className={`whitespace-nowrap px-1 pb-1.5 text-sm border-b-2 transition ${
-        active
-          ? "border-[var(--accent)] text-[var(--ink)] font-medium"
-          : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
+        active ? "border-[var(--maroon)] text-[var(--ink)] font-medium" : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
       }`}
     >
       {children}
@@ -799,15 +551,7 @@ function Tab({
   );
 }
 
-function Field({
-  label,
-  optional,
-  children,
-}: {
-  label: string;
-  optional?: boolean;
-  children: React.ReactNode;
-}) {
+function Field({ label, optional, children }: { label: string; optional?: boolean; children: React.ReactNode }) {
   return (
     <div>
       <label className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
@@ -848,14 +592,14 @@ function CopyRow({ path }: { path: string }) {
 function WhatsAppButton({ path }: { path: string }) {
   const url = typeof window !== "undefined" ? `${window.location.origin}${path}` : path;
   const text = encodeURIComponent(
-    `I made a little gift list — pick something from it (quietly) so nothing gets bought twice: ${url}`
+    `We made our wedding gift registry — pick something from it (quietly) so nothing gets bought twice: ${url}`
   );
   return (
     <a
       href={`https://wa.me/?text=${text}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="mt-3 block text-center w-full py-2.5 rounded-xl border border-[var(--line)] text-sm font-medium hover:border-[var(--accent)] hover:text-[var(--accent-deep)] transition"
+      className="mt-3 block text-center w-full py-2.5 rounded-xl border border-[var(--line)] text-sm font-medium hover:border-[var(--maroon)] hover:text-[var(--maroon)] transition"
     >
       Share on WhatsApp
     </a>
