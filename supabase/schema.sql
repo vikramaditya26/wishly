@@ -32,8 +32,21 @@ create table if not exists basket_items (
 
 create index if not exists basket_items_basket_id_idx on basket_items (basket_id);
 
+-- Curated gifts the site owner adds from the admin panel (/admin). Shown to
+-- everyone, merged with the built-in catalog in lib/catalog.ts.
+create table if not exists catalog_items (
+  id text primary key,
+  category text not null,
+  name text not null,
+  image_url text,
+  buy_url text,
+  position int default 0,
+  created_at timestamptz default now()
+);
+
 -- Lock both tables down: no anonymous/public access at all.
 -- The website talks to the database only from the server using the
 -- service role key, which bypasses row level security.
 alter table baskets enable row level security;
 alter table basket_items enable row level security;
+alter table catalog_items enable row level security;

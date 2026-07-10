@@ -345,3 +345,26 @@ README for the owner-facing step-by-step.
   warmer/emotional. Verified locally against live DB: home sections, fonts
   (Cinzel/Cormorant/Poppins in CSS), invitation letter, dashboard stats, and a
   data-URL uploaded photo persisting + rendering on the guest page.
+- **2026-07-10 (catalog expansion + admin panel)** — (1) Catalog rebuilt from
+  the full 194-item dummyjson set into 13 sections with 139 items, heavily
+  women/bridal-weighted (Beauty & Glow, For the Bride, Her Shoes & Bags,
+  Jewellery & Accessories) plus For the Groom, His Watches & Scents, Home,
+  Kitchen, Cookware & Appliances, Tech, Audio, Fitness, Honeymoon. Generated
+  via scratchpad/gen-wedding-catalog.js (distinct photos only, no repeats).
+  (2) `CatalogProduct` gained optional `buyUrl`; the "buy" link is
+  `buyUrl ?? amazonSearchLink(query)`. (3) NEW admin panel `/admin`: the owner
+  enters ADMIN_KEY (env var; remembered in localStorage) and adds gifts shown
+  to EVERYONE — pick a section, name, upload a photo (downscaled data URL) or
+  pull from a link, and a buy link. Backed by new `catalog_items` table
+  (migration run on live DB + schema.sql) and `/api/catalog` (GET public;
+  POST/DELETE gated by ADMIN_KEY). New store methods listCatalogItems/
+  addCatalogItem/deleteCatalogItem in both stores; new `AdminItem` type. Home
+  page fetches `/api/catalog` on mount and MERGES owner items into the shelves
+  by category (unified `Displayable` shape). (4) Diagnosed owner's "pasting
+  link not fetching images": Amazon/Myntra block Vercel datacenter IPs
+  (confirmed live: Amazon errors, Myntra returns "Site Maintenance") — link
+  fetch is best-effort; UPLOAD is the reliable path. **ACTION REQUIRED: set
+  `ADMIN_KEY` in Vercel env vars** (same as `.env.local`, default
+  `wishly-admin-2026`) or the live /admin POST returns 503. Verified locally
+  against live DB: 13 sections render, admin add/merge/delete, wrong-key 403,
+  buyUrl + uploaded photo flow to the guest page. Test rows cleaned up.

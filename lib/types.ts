@@ -7,6 +7,17 @@ export interface CatalogProduct {
   image: string; // product photo URL
   category: string; // category id from CATEGORIES
   amazonQuery: string; // used to build an affiliate-tagged amazon.in search link
+  buyUrl?: string; // an explicit product link; overrides the search link
+}
+
+// A curated gift the site owner adds from the admin panel (stored in the DB
+// and shown to everyone, alongside the built-in CatalogProduct list).
+export interface AdminItem {
+  id: string;
+  category: string;
+  name: string;
+  imageUrl?: string;
+  buyUrl?: string;
 }
 
 export interface BasketItem {

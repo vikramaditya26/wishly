@@ -12,7 +12,7 @@
 
 import postgres from "postgres";
 import { customAlphabet } from "nanoid";
-import type { Basket, BasketItem, BasketWithSecret } from "./types";
+import type { AdminItem, Basket, BasketItem, BasketWithSecret } from "./types";
 
 // URL-friendly, no confusing chars (no 0/O, 1/l).
 const shortId = customAlphabet("23456789abcdefghjkmnpqrstuvwxyz", 10);
@@ -46,6 +46,10 @@ interface Store {
   removeItem(shareId: string, itemId: string): Promise<boolean>;
   /** Creator: delete the whole list (verifies the manage key first). */
   deleteBasket(shareId: string, key: string): Promise<boolean>;
+  /** Owner-curated catalog items (admin panel), shown to everyone. */
+  listCatalogItems(): Promise<AdminItem[]>;
+  addCatalogItem(item: Omit<AdminItem, "id">): Promise<AdminItem>;
+  deleteCatalogItem(id: string): Promise<boolean>;
 }
 
 // ------------------------------ in-memory ---------------------------------
@@ -133,7 +137,26 @@ const memoryStore: Store = {
     if (!b || b.manageKey !== key) return false;
     return mem.delete(shareId);
   },
+  async listCatalogItems() {
+    return [...memCatalog];
+  },
+  async addCatalogItem(item) {
+    const it: AdminItem = { ...item, id: `admin-${Date.now()}-${(Math.random() * 1e6) | 0}` };
+    memCatalog.push(it);
+    return it;
+  },
+  async deleteCatalogItem(id) {
+    const before = memCatalog.length;
+    const idx = memCatalog.findIndex((i) => i.id === id);
+    if (idx >= 0) memCatalog.splice(idx, 1);
+    return memCatalog.length < before;
+  },
 };
+
+// admin catalog items in demo mode (survives HMR via globalThis)
+const memCatalog: AdminItem[] =
+  (globalThis as { __wishlyCatalog?: AdminItem[] }).__wishlyCatalog ??
+  ((globalThis as { __wishlyCatalog?: AdminItem[] }).__wishlyCatalog = []);
 
 // ------------------------------ postgres ----------------------------------
 
@@ -302,6 +325,31 @@ const postgresStore: Store = {
     // basket_items cascade on delete (see schema.sql)
     const deleted = await sql`
       delete from baskets where share_id = ${shareId} and manage_key = ${key} returning id`;
+    return deleted.length > 0;
+  },
+  async listCatalogItems() {
+    const sql = db();
+    const rows = await sql`
+      select id, category, name, image_url, buy_url from catalog_items order by position, created_at`;
+    return (rows as unknown as { id: string; category: string; name: string; image_url: string | null; buy_url: string | null }[]).map((r) => ({
+      id: r.id,
+      category: r.category,
+      name: r.name,
+      imageUrl: r.image_url ?? undefined,
+      buyUrl: r.buy_url ?? undefined,
+    }));
+  },
+  async addCatalogItem(item) {
+    const sql = db();
+    const id = `admin-${Date.now()}-${(Math.random() * 1e6) | 0}`;
+    await sql`
+      insert into catalog_items (id, category, name, image_url, buy_url)
+      values (${id}, ${item.category}, ${item.name}, ${item.imageUrl ?? null}, ${item.buyUrl ?? null})`;
+    return { id, ...item };
+  },
+  async deleteCatalogItem(id) {
+    const sql = db();
+    const deleted = await sql`delete from catalog_items where id = ${id} returning id`;
     return deleted.length > 0;
   },
 };

@@ -5,14 +5,23 @@
 // centrepiece, invitation templates, then the couple's details + share links
 // (as steps on the same page).
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CATEGORIES, PRODUCTS, TEMPLATES } from "@/lib/catalog";
 import { SITE_NAME, amazonSearchLink } from "@/lib/config";
 import { AddGiftModal, NewGift } from "@/components/AddGiftModal";
 import { burstConfetti } from "@/lib/confetti";
 import { Petals } from "@/components/Petals";
 import { GoldDivider, Lotus, Mandala, FloralCorner, PeacockFeather } from "@/components/Decor";
-import type { BasketItem } from "@/lib/types";
+import type { AdminItem, BasketItem } from "@/lib/types";
+
+// One shape for shelf cards, whether the gift is built-in or owner-added.
+interface Displayable {
+  id: string;
+  name: string;
+  image?: string;
+  category: string;
+  url: string;
+}
 
 type Step = "build" | "details" | "done";
 type DraftItem = Omit<BasketItem, "claimedBy">;
@@ -51,6 +60,15 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [template, setTemplate] = useState(TEMPLATES[0].id);
 
+  // owner-added catalog items (merged into the shelves for everyone)
+  const [adminItems, setAdminItems] = useState<AdminItem[]>([]);
+  useEffect(() => {
+    fetch("/api/catalog")
+      .then((r) => r.json())
+      .then((d) => setAdminItems(Array.isArray(d.items) ? d.items : []))
+      .catch(() => {});
+  }, []);
+
   // result
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -58,6 +76,28 @@ export default function Home() {
 
   const pickedList = Object.values(picked);
   const count = pickedList.length;
+
+  // built-in gifts + owner-added, in one lookup keyed by id
+  const allProducts = useMemo<Map<string, Displayable>>(() => {
+    const m = new Map<string, Displayable>();
+    for (const p of PRODUCTS) {
+      m.set(p.id, { id: p.id, name: p.name, image: p.image, category: p.category, url: p.buyUrl ?? amazonSearchLink(p.amazonQuery) });
+    }
+    for (const a of adminItems) {
+      m.set(a.id, { id: a.id, name: a.name, image: a.imageUrl, category: a.category, url: a.buyUrl || amazonSearchLink(a.name) });
+    }
+    return m;
+  }, [adminItems]);
+
+  const productsByCategory = useMemo(() => {
+    const m = new Map<string, Displayable[]>();
+    for (const p of allProducts.values()) {
+      const arr = m.get(p.category) ?? [];
+      arr.push(p);
+      m.set(p.category, arr);
+    }
+    return m;
+  }, [allProducts]);
 
   const shownCategories = useMemo(
     () => (category === "all" ? CATEGORIES : CATEGORIES.filter((c) => c.id === category)),
@@ -70,8 +110,8 @@ export default function Home() {
       const next = { ...prev };
       if (next[id]) delete next[id];
       else {
-        const p = PRODUCTS.find((x) => x.id === id)!;
-        next[id] = { id: p.id, name: p.name, imageUrl: p.image, url: amazonSearchLink(p.amazonQuery) };
+        const p = allProducts.get(id);
+        if (p) next[id] = { id: p.id, name: p.name, imageUrl: p.image, url: p.url };
       }
       return next;
     });
@@ -316,7 +356,7 @@ export default function Home() {
                 key={it.id}
                 image={it.imageUrl}
                 name={it.name}
-                sub={it.id.startsWith("custom-") ? (linkDomain(it.url) ? `from ${linkDomain(it.url)}` : "added by you") : CATEGORY_LABEL[PRODUCTS.find((p) => p.id === it.id)?.category ?? ""] ?? ""}
+                sub={it.id.startsWith("custom-") ? (linkDomain(it.url) ? `from ${linkDomain(it.url)}` : "added by you") : CATEGORY_LABEL[allProducts.get(it.id)?.category ?? ""] ?? ""}
                 added
                 actionLabel="Remove"
                 onAction={() => removeItem(it.id)}
@@ -326,7 +366,7 @@ export default function Home() {
         )}
 
         {shownCategories.map((c) => {
-          const items = PRODUCTS.filter((p) => p.category === c.id);
+          const items = productsByCategory.get(c.id) ?? [];
           if (items.length === 0) return null;
           return (
             <Shelf key={c.id} title={c.label} blurb={c.blurb}>
