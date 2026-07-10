@@ -22,7 +22,7 @@ export async function POST(
   const key = clean(body.key, 60);
   const name = clean(body.name, 120);
   const url = clean(body.url, 500) || undefined;
-  const imageUrl = clean(body.imageUrl, 500) || undefined;
+  const imageUrl = clean(body.imageUrl, 300000) || undefined;
   if (!key || !name) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

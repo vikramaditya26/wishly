@@ -41,7 +41,7 @@ export default function MyListsPage() {
   async function deleteList(list: SavedBasket) {
     if (
       !window.confirm(
-        `Delete ${list.hostName}'s list for good? The share link will stop working for everyone.`
+        `Delete ${list.hostName}'s registry for good? The share link will stop working for everyone.`
       )
     )
       return;
@@ -126,7 +126,7 @@ export default function MyListsPage() {
                       disabled={deletingId === l.shareId}
                       className="mt-2.5 text-xs text-[var(--muted)] hover:text-[var(--accent-deep)] underline underline-offset-2 disabled:opacity-40"
                     >
-                      {deletingId === l.shareId ? "Deleting…" : "Delete this list"}
+                      {deletingId === l.shareId ? "Deleting…" : "Delete this registry"}
                     </button>
                   </div>
                 </div>

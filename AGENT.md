@@ -315,3 +315,33 @@ README for the owner-facing step-by-step.
   then reservable gifts). Owner photos copied to `public/wedding/`. `/my`,
   manage page, OG images + metadata reworded to registry/couple. Verified end
   to end locally against the live DB.
+- **2026-07-10 (PREMIUM INDIAN WEDDING REDESIGN — major)** — Full aesthetic
+  overhaul to a Sabyasachi/invitation feel (owner shared lotus/peacock/mandala
+  invite references). Fonts: Cinzel (names/logo), Cormorant Garamond
+  (headings), Poppins (body) via next/font. Palette: ivory/maroon/royal-red/
+  emerald/champagne-gold/rose/saffron with CSS design tokens + helper classes
+  (.btn-primary maroon-gradient, .btn-gold-fill shimmering gold, .card /
+  .card-lift, .gold-frame, .eyebrow, .mandala-bg) in globals.css. New
+  `components/Decor.tsx` = hand-drawn SVG motifs (Lotus, Mandala, Paisley,
+  PeacockFeather, FloralCorner, TempleArch, GoldDivider) used at low opacity
+  as ornaments. `components/Petals.tsx` = CSS falling-petal layer (reduced-
+  motion aware). `lib/confetti.ts` reworked to marigold-petal + gold-sparkle
+  burst; fires on add-gift (at cursor), reserve, and registry-create. Home
+  redesigned: "Celebrate Love. Celebrate Together." hero with floral corners +
+  peacock feathers, 4-step illustrated How-It-Works timeline (step 2 "Add your
+  own" highlighted), maroon "Looking for something special?" add-your-own
+  centrepiece, gold-framed template cards, ornate maroon footer with mandala/
+  peacock; REMOVED the planning/resources section entirely; sticky continue is
+  now a shimmering gold "Continue to your invitation" pill. Guest page is a
+  full wedding invitation: template-photo hero, an emotional invitation letter
+  in a gold frame, then the registry. Dashboard rebranded "My Wedding
+  Registry" with a maroon welcome banner + Total/Reserved/Available stat cards
+  + a gold progress bar. Success/share screen: congratulations, copy link,
+  WhatsApp, Email, and a QR code (api.qrserver.com encoding the public share
+  URL) + confetti. **Add-your-own now supports real image upload** (tap or
+  drag-drop) — downscaled in-browser via canvas to a ~500px JPEG data URL and
+  stored inline on the item (fixes owner's "uploaded images not displaying";
+  imageUrl caps raised to 300k in the create + items APIs). All copy rewritten
+  warmer/emotional. Verified locally against live DB: home sections, fonts
+  (Cinzel/Cormorant/Poppins in CSS), invitation letter, dashboard stats, and a
+  data-URL uploaded photo persisting + rendering on the guest page.

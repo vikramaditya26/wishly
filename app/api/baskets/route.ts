@@ -25,7 +25,8 @@ export async function POST(req: NextRequest) {
     .map((it: Record<string, unknown>, i: number) => ({
       id: clean(it.id, 40) || `item-${i}`,
       name: clean(it.name, 120),
-      imageUrl: clean(it.imageUrl, 500) || undefined,
+      // large cap so uploaded photos (stored as downscaled data URLs) fit
+      imageUrl: clean(it.imageUrl, 300000) || undefined,
       url: clean(it.url, 500) || undefined,
     }))
     .filter((it) => it.name.length > 0);
